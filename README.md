@@ -61,9 +61,9 @@ To use the CallHub MCP with Claude, you need to add it to Claude's configuration
 
    ```json
    "callhub-mcp": {
-     "command": "/path/to/callhub-mcp-py/.venv/bin/python",
+     "command": "/path/to/callhub-mcp/.venv/bin/python",
      "args": [
-       "/path/to/callhub-mcp-py/src/server.py"
+       "/path/to/callhub-mcp/src/server.py"
      ]
    }
    ```
