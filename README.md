@@ -31,7 +31,7 @@ CallHub MCP is a Python-based tool that allows you to interact with the CallHub 
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/callhub/callhub-mcp-py.git
+   git clone https://github.com/callhub/callhub-mcp.git
    cd callhub-mcp-py
    ```
 
