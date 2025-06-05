@@ -8,6 +8,9 @@ from .auth import (
     save_credentials
 )
 
+from .sms_broadcast import SMSBroadcast
+from .voice_broadcast import VoiceBroadcast
+
 from .utils import (
     build_url,
     parse_input_fields,

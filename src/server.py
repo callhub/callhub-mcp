@@ -115,6 +115,18 @@ from callhub.sms_campaigns import (
     delete_sms_campaign
 )
 
+from callhub.p2p_campaigns import (
+    list_p2p_campaigns,
+    update_p2p_campaign,
+    delete_p2p_campaign
+)
+
+from callhub.sms_broadcasts import (
+    list_sms_broadcasts,
+    update_sms_broadcast,
+    delete_sms_broadcast
+)
+
 from callhub.agent_activation import (
     export_agent_activation_urls
 )
@@ -1297,6 +1309,146 @@ def delete_sms_campaign_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
+# P2P Campaign Management Tools
+
+@server.tool(name="listP2pCampaigns", description="List all P2P campaigns with optional pagination.")
+def list_p2p_campaigns_tool(
+    account: Optional[str] = None,
+    page: Optional[int] = None,
+    pageSize: Optional[int] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if page is not None:
+            params["page"] = page
+        if pageSize is not None:
+            params["pageSize"] = pageSize
+
+        return list_p2p_campaigns(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="updateP2pCampaign", description="Update a P2P campaign's status. Valid values: 'start', 'pause', 'abort', 'end' or 1-4 numerically.")
+def update_p2p_campaign_tool(
+    account: Optional[str] = None,
+    campaignId: str = None,
+    status: str = None # Kept as str, conversion in module
+) -> dict:
+    try:
+        # Validate required parameters
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+        if not status: # Basic check, detailed validation in module
+            return {
+                "isError": True,
+                "content": [{"type": "text", "text": "Valid 'status' is required: start, pause, abort, end, or 1-4 numerically"}]
+            }
+
+        params = {
+            "campaignId": campaignId,
+            "status": status
+        }
+        if account:
+            params["accountName"] = account
+
+        return update_p2p_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="deleteP2pCampaign", description="Delete a P2P campaign by ID.")
+def delete_p2p_campaign_tool(
+    account: Optional[str] = None,
+    campaignId: str = None
+) -> dict:
+    try:
+        # Validate required parameters
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+        params = {"campaignId": campaignId}
+        if account:
+            params["accountName"] = account
+
+        return delete_p2p_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+# SMS Broadcast Management Tools
+
+@server.tool(name="listSmsBroadcasts", description="List all SMS broadcast campaigns with optional pagination.")
+def list_sms_broadcasts_tool(
+    account: Optional[str] = None,
+    page: Optional[int] = None,
+    pageSize: Optional[int] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if page is not None:
+            params["page"] = page
+        if pageSize is not None:
+            params["pageSize"] = pageSize
+
+        return list_sms_broadcasts(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="updateSmsBroadcast", description="Update an SMS broadcast campaign's status. Valid values: 'start', 'pause', 'abort', 'end' or 1-4 numerically.")
+def update_sms_broadcast_tool(
+    account: Optional[str] = None,
+    campaignId: str = None,
+    status: str = None # Kept as str, conversion in module
+) -> dict:
+    try:
+        # Validate required parameters
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+        if not status: # Basic check, detailed validation in module
+            return {
+                "isError": True,
+                "content": [{"type": "text", "text": "Valid 'status' is required: start, pause, abort, end, or 1-4 numerically"}]
+            }
+
+        params = {
+            "campaignId": campaignId,
+            "status": status
+        }
+        if account:
+            params["account"] = account
+
+        return update_sms_broadcast(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="deleteSmsBroadcast", description="Delete an SMS broadcast campaign by ID.")
+def delete_sms_broadcast_tool(
+    account: Optional[str] = None,
+    campaignId: str = None
+) -> dict:
+    try:
+        # Validate required parameters
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+        params = {"campaignId": campaignId}
+        if account:
+            params["accountName"] = account
+
+        return delete_sms_broadcast(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
 # User and Credit Usage Tools
 
 @server.tool(name="getUsers", description="Retrieve a list of all users in the CallHub account.")
@@ -1858,13 +2010,13 @@ def prepare_agent_activation_tool(
     Prepare for agent activation by setting up the log file and showing instructions.
     This MUST be called BEFORE actually activating agents to ensure the user knows
     where to look for progress updates.
-    
+
     Args:
         account: CallHub account name
         password: Password to set for all agents (must be at least 8 characters)
         activation_data: List of activation data entries
         batch_size: Number of agents to process in each batch
-    
+
     Returns:
         Dict with log file path and instructions
     """

@@ -229,7 +229,7 @@ def api_call(method: str, url: str, headers: dict, data: Any = None, params: Dic
                 headers=headers,
                 data=data,
                 params=params,
-                json=json_data
+                json=json_data,verify=False
             )
             
             # Log the response status
