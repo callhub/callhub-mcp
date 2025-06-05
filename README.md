@@ -32,7 +32,7 @@ CallHub MCP is a Python-based tool that allows you to interact with the CallHub 
 1. Clone the repository:
    ```bash
    git clone https://github.com/callhub/callhub-mcp.git
-   cd callhub-mcp-py
+   cd callhub-mcp
    ```
 
 2. Create a virtual environment:
@@ -60,7 +60,7 @@ To use the CallHub MCP with Claude, you need to add it to Claude's configuration
    - Add the following configuration:
 
    ```json
-   "callhub-mcp-py": {
+   "callhub-mcp": {
      "command": "/path/to/callhub-mcp-py/.venv/bin/python",
      "args": [
        "/path/to/callhub-mcp-py/src/server.py"
