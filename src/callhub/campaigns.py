@@ -141,7 +141,7 @@ def delete_call_center_campaign(params: Dict) -> Dict:
 
 def create_call_center_campaign(params: Dict) -> Dict:
     """
-    Create a new call center campaign.
+    Create a new call center campaign using the Power Campaign API.
     
     This function handles the complex structure needed to create a call center campaign 
     in CallHub, including the script with screens, questions, and responses.
@@ -234,15 +234,16 @@ def create_call_center_campaign(params: Dict) -> Dict:
             "content": [{"type": "text", "text": f"Missing required fields: {', '.join(missing_fields)}"}]
         }
     
-    # Validate script structure - should be an array of objects
+    # Validate and normalize script structure
     script = campaign_data.get("script", [])
     if not isinstance(script, list) or len(script) == 0:
         return {
             "isError": True,
             "content": [{"type": "text", "text": "Script must be a non-empty array of script elements"}]
         }
-        
-    # Check each script element has required type
+    
+    # Normalize script structure based on Django API expectations
+    normalized_script = []
     for i, element in enumerate(script):
         if not isinstance(element, dict):
             return {
@@ -250,40 +251,73 @@ def create_call_center_campaign(params: Dict) -> Dict:
                 "content": [{"type": "text", "text": f"Script element at index {i} must be an object/dictionary"}]
             }
         
-        # All script elements must have a type
-        if "type" not in element:
+        # Convert string type to integer if needed
+        element_type = element.get("type")
+        if isinstance(element_type, str):
+            try:
+                element_type = int(element_type)
+            except ValueError:
+                return {
+                    "isError": True,
+                    "content": [{"type": "text", "text": f"Script element at index {i} has invalid type: {element_type}"}]
+                }
+        
+        if element_type is None:
             return {
                 "isError": True,
                 "content": [{"type": "text", "text": f"Script element at index {i} missing 'type' field"}]
             }
         
-        # Type 12 should have script_text
-        if element.get("type") == "12" and "script_text" not in element:
-            return {
-                "isError": True, 
-                "content": [{"type": "text", "text": f"Script element at index {i} with type 12 must have 'script_text'"}]
-            }
+        # Create normalized element
+        normalized_element = {
+            "type": element_type
+        }
         
-        # Type 1 should have question and choices
-        if element.get("type") == "1":
-            if "question" not in element:
+        # Handle script text (type 12)
+        if element_type == 12:
+            script_text = element.get("script_text") or element.get("content") or element.get("question")
+            if not script_text:
                 return {
                     "isError": True,
-                    "content": [{"type": "text", "text": f"Script element at index {i} with type 1 must have 'question'"}]
+                    "content": [{"type": "text", "text": f"Script element at index {i} with type 12 must have 'script_text', 'content', or 'question'"}]
                 }
+            normalized_element["script_text"] = script_text
+        
+        # Handle questions (type 1, 3, etc.)
+        elif element_type in [1, 3]:
+            question = element.get("question") or element.get("content")
+            if not question:
+                return {
+                    "isError": True,
+                    "content": [{"type": "text", "text": f"Script element at index {i} with type {element_type} must have 'question' or 'content'"}]
+                }
+            normalized_element["question"] = question
             
-            choices = element.get("choices", [])
-            if not isinstance(choices, list) or len(choices) == 0:
-                return {
-                    "isError": True,
-                    "content": [{"type": "text", "text": f"Script element at index {i} with type 1 must have non-empty 'choices' array"}]
-                }
+            # Handle choices for multi-choice questions (type 1)
+            if element_type == 1:
+                choices = element.get("choices", [])
+                if not isinstance(choices, list) or len(choices) == 0:
+                    return {
+                        "isError": True,
+                        "content": [{"type": "text", "text": f"Script element at index {i} with type 1 must have non-empty 'choices' array"}]
+                    }
+                normalized_element["choices"] = choices
+        
+        # Add any other fields as-is
+        for key, value in element.items():
+            if key not in ["type", "script_text", "question", "content", "choices"]:
+                normalized_element[key] = value
+        
+        normalized_script.append(normalized_element)
+    
+    # Update the campaign data with normalized script
+    campaign_data["script"] = normalized_script
     
     try:
         # Get account configuration
         account_name, api_key, base_url = get_account_config(params.get("accountName"))
         
-        # Build URL and headers
+        # Build URL and headers for power campaign creation
         url = build_url(base_url, "v1/power_campaign/create/")
         headers = get_auth_headers(api_key, "application/json")
         
