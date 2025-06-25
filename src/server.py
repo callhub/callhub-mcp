@@ -115,15 +115,9 @@ from callhub.sms_campaigns import (
     delete_sms_campaign
 )
 
-from callhub.p2p_campaigns import (
-    list_p2p_campaigns,
-    update_p2p_campaign,
-    delete_p2p_campaign,
-    get_p2p_campaign_agents,
-    add_agents_to_p2p_campaign,
-    reassign_p2p_agents,
-    get_p2p_surveys
-)
+from callhub.p2p_campaigns import (list_p2p_campaigns , update_p2p_campaign , delete_p2p_campaign ,
+                                   get_p2p_campaign_agents , add_agents_to_p2p_campaign , reassign_p2p_agents ,
+                                   get_p2p_surveys , create_p2p_campaign)
 
 from callhub.sms_broadcasts import (
     list_sms_broadcasts,
@@ -1324,7 +1318,7 @@ def list_p2p_campaigns_tool(
     try:
         params = {}
         if account:
-            params["accountName"] = account
+            params["account"] = account
         if page is not None:
             params["page"] = page
         if pageSize is not None:
@@ -1357,7 +1351,7 @@ def update_p2p_campaign_tool(
             "status": status
         }
         if account:
-            params["accountName"] = account
+            params["account"] = account
 
         return update_p2p_campaign(params)
     except Exception as e:
@@ -1376,11 +1370,12 @@ def delete_p2p_campaign_tool(
 
         params = {"campaignId": campaignId}
         if account:
-            params["accountName"] = account
+            params["account"] = account
 
         return delete_p2p_campaign(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
 
 
 @server.tool(name="getP2pCampaignAgents", description="Get agents for a P2P campaign.")
@@ -1508,6 +1503,23 @@ def update_sms_broadcast_tool(
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
+@server.tool(name="createP2PCampaign", description="Create a new P2P campaign with a complex script structure.")
+def create_call_center_campaign_tool(
+    account: Optional[str] = None,
+    campaign_data: dict = None
+) -> dict:
+    try:
+        # Validate required parameters
+        if not campaign_data:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaign_data' is required."}]}
+
+        params = {"campaign_data": campaign_data}
+        if account:
+            params["accountName"] = account
+
+        return create_p2p_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 @server.tool(name="deleteSmsBroadcast", description="Delete an SMS broadcast campaign by ID.")
 def delete_sms_broadcast_tool(

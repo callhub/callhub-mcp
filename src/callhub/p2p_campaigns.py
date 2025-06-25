@@ -28,7 +28,7 @@ def list_p2p_campaigns(params: Dict) -> Dict:
         account_name, api_key, base_url = get_account_config(params.get("account"))
         
         # Build URL using Snowflake endpoint
-        url = build_url(base_url, "v2/sms_campaign/snowflake/")
+        url = build_url(base_url, "v1/sms_campaigns/?campaign_type=4")
         headers = get_auth_headers(api_key)
         
         # Prepare query parameters
@@ -229,6 +229,41 @@ def reassign_p2p_agents(params: Dict) -> Dict:
         
     except Exception as e:
         sys.stderr.write(f"[callhub] Error reassigning P2P agents: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+def create_p2p_campaign(params: Dict) -> Dict:
+    """
+    Create a new P2P (Snowflake) campaign.
+    
+    Args:
+        params: Dictionary containing the following keys:
+            account (str, optional): The account name to use
+            campaign_data (Dict): Campaign configuration data including:
+                - name (str): Campaign name
+                - phonebook (List[str]): List of phonebook URLs
+                - message (str): Campaign message
+                - other campaign-specific settings
+    
+    Returns:
+        dict: API response containing created campaign data or error information
+    """
+    campaign_data = params.get("campaign_data")
+    if not campaign_data:
+        return {"isError": True, "content": [{"type": "text", "text": "'campaign_data' is required."}]}
+    
+    try:
+        # Get account configuration
+        account_name, api_key, base_url = get_account_config(params.get("account"))
+        
+        # Build URL using Snowflake endpoint
+        url = build_url(base_url, "v2/sms_campaign/snowflake/")
+        headers = get_auth_headers(api_key, "application/json")
+        
+        # Make API call
+        return api_call("POST", url, headers, json_data=campaign_data)
+        
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error creating P2P campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 def get_p2p_surveys(params: Dict) -> Dict:
