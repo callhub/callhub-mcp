@@ -115,11 +115,9 @@ from callhub.sms_campaigns import (
     delete_sms_campaign
 )
 
-from callhub.p2p_campaigns import (
-    list_p2p_campaigns,
-    update_p2p_campaign,
-    delete_p2p_campaign
-)
+from callhub.p2p_campaigns import (list_p2p_campaigns , update_p2p_campaign , delete_p2p_campaign ,
+                                   get_p2p_campaign_agents , add_agents_to_p2p_campaign , reassign_p2p_agents ,
+                                   get_p2p_surveys , create_p2p_campaign)
 
 from callhub.sms_broadcasts import (
     list_sms_broadcasts,
@@ -1320,7 +1318,7 @@ def list_p2p_campaigns_tool(
     try:
         params = {}
         if account:
-            params["accountName"] = account
+            params["account"] = account
         if page is not None:
             params["page"] = page
         if pageSize is not None:
@@ -1353,7 +1351,7 @@ def update_p2p_campaign_tool(
             "status": status
         }
         if account:
-            params["accountName"] = account
+            params["account"] = account
 
         return update_p2p_campaign(params)
     except Exception as e:
@@ -1372,9 +1370,85 @@ def delete_p2p_campaign_tool(
 
         params = {"campaignId": campaignId}
         if account:
-            params["accountName"] = account
+            params["account"] = account
 
         return delete_p2p_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+
+@server.tool(name="getP2pCampaignAgents", description="Get agents for a P2P campaign.")
+def get_p2p_campaign_agents_tool(
+    account: Optional[str] = None,
+    campaignId: str = None
+) -> dict:
+    try:
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+        params = {"campaignId": campaignId}
+        if account:
+            params["account"] = account
+
+        return get_p2p_campaign_agents(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="addAgentsToP2pCampaign", description="Add agents to a P2P campaign.")
+def add_agents_to_p2p_campaign_tool(
+    account: Optional[str] = None,
+    campaignId: str = None,
+    agentIds: List[str] = None
+) -> dict:
+    try:
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+        if not agentIds:
+            return {"isError": True, "content": [{"type": "text", "text": "'agentIds' is required."}]}
+
+        params = {"campaignId": campaignId, "agentIds": agentIds}
+        if account:
+            params["account"] = account
+
+        return add_agents_to_p2p_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="reassignP2pAgents", description="Reassign agents in a P2P campaign.")
+def reassign_p2p_agents_tool(
+    account: Optional[str] = None,
+    campaignId: str = None,
+    reassignData: dict = None
+) -> dict:
+    try:
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+        params = {"campaignId": campaignId, "reassignData": reassignData or {}}
+        if account:
+            params["account"] = account
+
+        return reassign_p2p_agents(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getP2pSurveys", description="Get surveys for a P2P campaign.")
+def get_p2p_surveys_tool(
+    account: Optional[str] = None,
+    campaignId: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if campaignId:
+            params["campaignId"] = campaignId
+        if account:
+            params["account"] = account
+
+        return get_p2p_surveys(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -1429,6 +1503,23 @@ def update_sms_broadcast_tool(
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
+@server.tool(name="createP2PCampaign", description="Create a new P2P campaign with a complex script structure.")
+def create_call_center_campaign_tool(
+    account: Optional[str] = None,
+    campaign_data: dict = None
+) -> dict:
+    try:
+        # Validate required parameters
+        if not campaign_data:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaign_data' is required."}]}
+
+        params = {"campaign_data": campaign_data}
+        if account:
+            params["accountName"] = account
+
+        return create_p2p_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 @server.tool(name="deleteSmsBroadcast", description="Delete an SMS broadcast campaign by ID.")
 def delete_sms_broadcast_tool(

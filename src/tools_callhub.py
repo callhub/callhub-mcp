@@ -157,6 +157,17 @@ from callhub.sms_campaigns import (
     delete_sms_campaign
 )
 
+from callhub.p2p_campaigns import (
+    list_p2p_campaigns,
+    update_p2p_campaign,
+    delete_p2p_campaign,
+    create_p2p_campaign,
+    get_p2p_campaign_agents,
+    add_agents_to_p2p_campaign,
+    reassign_p2p_agents,
+    get_p2p_surveys
+)
+
 from callhub.browser_automation import (
     export_agent_activation_urls_browser,
     activate_agents_with_password,
@@ -346,6 +357,47 @@ def updateSmsCampaign(params: dict) -> dict:
 def deleteSmsCampaign(params: dict) -> dict:
     """Delete an SMS campaign by ID."""
     return delete_sms_campaign(params)
+
+
+# P2P Campaign Functions
+def listP2pCampaigns(params: dict) -> dict:
+    """List all P2P campaigns with optional pagination."""
+    return list_p2p_campaigns(params)
+
+def updateP2pCampaign(params: dict) -> dict:
+    """Update a P2P campaign's status.
+    
+    Valid status values are: "start", "pause", "abort", "end" or 1-4 numerically.
+    """
+    return update_p2p_campaign(params)
+
+def deleteP2pCampaign(params: dict) -> dict:
+    """Delete a P2P campaign by ID."""
+    return delete_p2p_campaign(params)
+
+def createP2pCampaign(params: dict) -> dict:
+    """Create a new P2P (Snowflake) campaign.
+    
+    Required parameters:
+    - campaign_data: Dictionary containing campaign configuration
+    """
+    return create_p2p_campaign(params)
+
+def getP2pCampaignAgents(params: dict) -> dict:
+    """Get agents for a P2P campaign."""
+    return get_p2p_campaign_agents(params)
+
+def addAgentsToP2pCampaign(params: dict) -> dict:
+    """Add agents to a P2P campaign."""
+    return add_agents_to_p2p_campaign(params)
+
+def reassignP2pAgents(params: dict) -> dict:
+    """Reassign agents in a P2P campaign."""
+    return reassign_p2p_agents(params)
+
+def getP2pSurveys(params: dict) -> dict:
+    """Get surveys for a P2P campaign."""
+    return get_p2p_surveys(params)
 
 
 # User and Credit Usage Functions
