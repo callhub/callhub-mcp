@@ -118,7 +118,11 @@ from callhub.sms_campaigns import (
 from callhub.p2p_campaigns import (
     list_p2p_campaigns,
     update_p2p_campaign,
-    delete_p2p_campaign
+    delete_p2p_campaign,
+    get_p2p_campaign_agents,
+    add_agents_to_p2p_campaign,
+    reassign_p2p_agents,
+    get_p2p_surveys
 )
 
 from callhub.sms_broadcasts import (
@@ -1375,6 +1379,81 @@ def delete_p2p_campaign_tool(
             params["accountName"] = account
 
         return delete_p2p_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getP2pCampaignAgents", description="Get agents for a P2P campaign.")
+def get_p2p_campaign_agents_tool(
+    account: Optional[str] = None,
+    campaignId: str = None
+) -> dict:
+    try:
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+        params = {"campaignId": campaignId}
+        if account:
+            params["account"] = account
+
+        return get_p2p_campaign_agents(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="addAgentsToP2pCampaign", description="Add agents to a P2P campaign.")
+def add_agents_to_p2p_campaign_tool(
+    account: Optional[str] = None,
+    campaignId: str = None,
+    agentIds: List[str] = None
+) -> dict:
+    try:
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+        if not agentIds:
+            return {"isError": True, "content": [{"type": "text", "text": "'agentIds' is required."}]}
+
+        params = {"campaignId": campaignId, "agentIds": agentIds}
+        if account:
+            params["account"] = account
+
+        return add_agents_to_p2p_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="reassignP2pAgents", description="Reassign agents in a P2P campaign.")
+def reassign_p2p_agents_tool(
+    account: Optional[str] = None,
+    campaignId: str = None,
+    reassignData: dict = None
+) -> dict:
+    try:
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+        params = {"campaignId": campaignId, "reassignData": reassignData or {}}
+        if account:
+            params["account"] = account
+
+        return reassign_p2p_agents(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getP2pSurveys", description="Get surveys for a P2P campaign.")
+def get_p2p_surveys_tool(
+    account: Optional[str] = None,
+    campaignId: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if campaignId:
+            params["campaignId"] = campaignId
+        if account:
+            params["account"] = account
+
+        return get_p2p_surveys(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 

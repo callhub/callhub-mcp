@@ -1,6 +1,7 @@
 # p2p_campaigns.py
 """
 P2P (Peer-to-Peer) Campaign operations for CallHub API.
+P2P = Snowflake = Collective Texting in CallHub
 """
 
 import sys
@@ -11,7 +12,7 @@ from .auth import get_account_config
 
 def list_p2p_campaigns(params: Dict) -> Dict:
     """
-    List all P2P campaigns with optional pagination.
+    List all P2P campaigns (Snowflake campaigns) with optional pagination.
     
     Args:
         params: Dictionary containing the following keys:
@@ -26,8 +27,8 @@ def list_p2p_campaigns(params: Dict) -> Dict:
         # Get account configuration
         account_name, api_key, base_url = get_account_config(params.get("account"))
         
-        # Build URL and headers
-        url = build_url(base_url, "v1/p2p_campaigns/")
+        # Build URL using Snowflake endpoint
+        url = build_url(base_url, "v2/sms_campaign/snowflake/")
         headers = get_auth_headers(api_key)
         
         # Prepare query parameters
@@ -46,7 +47,7 @@ def list_p2p_campaigns(params: Dict) -> Dict:
 
 def update_p2p_campaign(params: Dict) -> Dict:
     """
-    Update a P2P campaign's status.
+    Update a P2P campaign's status using Snowflake endpoint.
     
     Args:
         params: Dictionary containing the following keys:
@@ -93,8 +94,8 @@ def update_p2p_campaign(params: Dict) -> Dict:
         # Get account configuration
         account_name, api_key, base_url = get_account_config(params.get("account"))
         
-        # Build URL and headers
-        url = build_url(base_url, "v1/p2p_campaigns/{}/", campaign_id)
+        # Build URL using Snowflake endpoint
+        url = build_url(base_url, "v2/sms_campaign/snowflake/{}/", campaign_id)
         headers = get_auth_headers(api_key, "application/json")
         
         # Prepare data
@@ -109,7 +110,7 @@ def update_p2p_campaign(params: Dict) -> Dict:
 
 def delete_p2p_campaign(params: Dict) -> Dict:
     """
-    Delete a P2P campaign by ID.
+    Delete a P2P campaign by ID using Snowflake endpoint.
     
     Args:
         params: Dictionary containing the following keys:
@@ -128,8 +129,8 @@ def delete_p2p_campaign(params: Dict) -> Dict:
         # Get account configuration
         account_name, api_key, base_url = get_account_config(params.get("account"))
         
-        # Build URL and headers
-        url = build_url(base_url, "v1/p2p_campaigns/{}/", campaign_id)
+        # Build URL using Snowflake endpoint
+        url = build_url(base_url, "v2/sms_campaign/snowflake/{}/", campaign_id)
         headers = get_auth_headers(api_key)
         
         # Make API call
@@ -137,4 +138,124 @@ def delete_p2p_campaign(params: Dict) -> Dict:
         
     except Exception as e:
         sys.stderr.write(f"[callhub] Error deleting P2P campaign: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+def get_p2p_campaign_agents(params: Dict) -> Dict:
+    """
+    Get agents for a P2P campaign using Collective Texting endpoint.
+    
+    Args:
+        params: Dictionary containing the following keys:
+            account (str, optional): The account name to use
+            campaignId (str): The ID of the campaign
+    
+    Returns:
+        dict: API response containing agent data
+    """
+    campaign_id = params.get("campaignId")
+    if not campaign_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+    
+    try:
+        account_name, api_key, base_url = get_account_config(params.get("account"))
+        url = build_url(base_url, "v2/collective_texting/{}/agents/", campaign_id)
+        headers = get_auth_headers(api_key)
+        
+        return api_call("GET", url, headers)
+        
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error getting P2P campaign agents: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+def add_agents_to_p2p_campaign(params: Dict) -> Dict:
+    """
+    Add agents to a P2P campaign using Collective Texting endpoint.
+    
+    Args:
+        params: Dictionary containing the following keys:
+            account (str, optional): The account name to use
+            campaignId (str): The ID of the campaign
+            agentIds (List[str]): List of agent IDs to add
+    
+    Returns:
+        dict: API response from the add operation
+    """
+    campaign_id = params.get("campaignId")
+    agent_ids = params.get("agentIds", [])
+    
+    if not campaign_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+    if not agent_ids:
+        return {"isError": True, "content": [{"type": "text", "text": "'agentIds' is required."}]}
+    
+    try:
+        account_name, api_key, base_url = get_account_config(params.get("account"))
+        url = build_url(base_url, "v2/collective_texting/{}/agents/add/", campaign_id)
+        headers = get_auth_headers(api_key, "application/json")
+        
+        data = {"agents_data": {len(agent_ids): agent_ids}}
+        
+        return api_call("POST", url, headers, json_data=data)
+        
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error adding agents to P2P campaign: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+def reassign_p2p_agents(params: Dict) -> Dict:
+    """
+    Reassign agents in a P2P campaign using Collective Texting endpoint.
+    
+    Args:
+        params: Dictionary containing the following keys:
+            account (str, optional): The account name to use
+            campaignId (str): The ID of the campaign
+            reassignData (Dict): Reassignment configuration
+    
+    Returns:
+        dict: API response from the reassign operation
+    """
+    campaign_id = params.get("campaignId")
+    reassign_data = params.get("reassignData", {})
+    
+    if not campaign_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+    
+    try:
+        account_name, api_key, base_url = get_account_config(params.get("account"))
+        url = build_url(base_url, "v2/collective_texting/{}/agents/reassign/", campaign_id)
+        headers = get_auth_headers(api_key, "application/json")
+        
+        return api_call("POST", url, headers, json_data=reassign_data)
+        
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error reassigning P2P agents: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+def get_p2p_surveys(params: Dict) -> Dict:
+    """
+    Get surveys for a P2P campaign using Snowflake survey endpoint.
+    
+    Args:
+        params: Dictionary containing the following keys:
+            account (str, optional): The account name to use
+            campaignId (str, optional): The ID of the campaign
+    
+    Returns:
+        dict: API response containing survey data
+    """
+    try:
+        account_name, api_key, base_url = get_account_config(params.get("account"))
+        
+        campaign_id = params.get("campaignId")
+        if campaign_id:
+            url = build_url(base_url, "v2/sms_campaign/snowflake/survey-list/{}/", campaign_id)
+        else:
+            url = build_url(base_url, "v2/sms_campaign/snowflake/survey-list/")
+        
+        headers = get_auth_headers(api_key)
+        
+        return api_call("GET", url, headers)
+        
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error getting P2P surveys: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
