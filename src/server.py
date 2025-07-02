@@ -195,6 +195,25 @@ from callhub.mcp_tools.batch_activation_tools import (
     reset_activation_state
 )
 
+from callhub.survey_templates import (
+    list_survey_templates,
+    get_survey_template,
+    create_survey_template,
+    update_survey_template,
+    delete_survey_template,
+    create_question_template
+)
+
+from callhub.snowflake_campaigns import (
+    list_snowflake_campaigns,
+    get_snowflake_campaign,
+    create_snowflake_campaign,
+    update_snowflake_campaign,
+    delete_snowflake_campaign,
+    update_snowflake_campaign_status,
+    get_campaign_agents
+)
+
 from callhub.utils import parse_input_fields
 
 # Load .env (for CALLHUB_ACCOUNT, etc.)
@@ -2118,6 +2137,332 @@ def prepare_agent_activation_tool(
             activation_data=activation_data,
             batch_size=batch_size
         )
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+# Survey Template Management Tools
+
+@server.tool(name="listSurveyTemplates", description="List all survey templates for the authenticated user.")
+def list_survey_templates_tool(
+    account: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        return list_survey_templates(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getSurveyTemplate", description="Get details for a specific survey template by ID.")
+def get_survey_template_tool(
+    account: Optional[str] = None,
+    templateId: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if templateId:
+            params["templateId"] = templateId
+        return get_survey_template(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="createSurveyTemplate", description="Create a new survey template with questions. Pass questions as a list of dictionaries with 'type', 'question', and optional 'question_name', 'is_initial_message' fields.")
+def create_survey_template_tool(
+    account: Optional[str] = None,
+    label: str = None,
+    questions: List[Dict[str, Any]] = None
+) -> dict:
+    try:
+        if not label:
+            return {"isError": True, "content": [{"type": "text", "text": "label is required"}]}
+        
+        params = {
+            "label": label,
+            "questions": questions or []
+        }
+        if account:
+            params["accountName"] = account
+        
+        return create_survey_template(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="updateSurveyTemplate", description="Update an existing survey template.")
+def update_survey_template_tool(
+    account: Optional[str] = None,
+    templateId: str = None,
+    label: Optional[str] = None,
+    questions: Optional[List[Dict[str, Any]]] = None
+) -> dict:
+    try:
+        if not templateId:
+            return {"isError": True, "content": [{"type": "text", "text": "templateId is required"}]}
+        
+        params = {"templateId": templateId}
+        if account:
+            params["accountName"] = account
+        if label:
+            params["label"] = label
+        if questions:
+            params["questions"] = questions
+        
+        return update_survey_template(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="deleteSurveyTemplate", description="Delete a survey template by ID.")
+def delete_survey_template_tool(
+    account: Optional[str] = None,
+    templateId: str = None
+) -> dict:
+    try:
+        if not templateId:
+            return {"isError": True, "content": [{"type": "text", "text": "templateId is required"}]}
+        
+        params = {"templateId": templateId}
+        if account:
+            params["accountName"] = account
+        
+        return delete_survey_template(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="createQuestionTemplate", description="Create a new question template for a survey template.")
+def create_question_template_tool(
+    account: Optional[str] = None,
+    type: str = None,
+    question: str = None,
+    survey_template_id: str = None,
+    question_name: Optional[str] = None,
+    is_initial_message: Optional[bool] = None
+) -> dict:
+    try:
+        if not all([type, question, survey_template_id]):
+            return {"isError": True, "content": [{"type": "text", "text": "type, question, and survey_template_id are required"}]}
+        
+        params = {
+            "type": type,
+            "question": question,
+            "survey_template_id": survey_template_id
+        }
+        if account:
+            params["accountName"] = account
+        if question_name:
+            params["question_name"] = question_name
+        if is_initial_message is not None:
+            params["is_initial_message"] = is_initial_message
+        
+        return create_question_template(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+# Snowflake Campaign Management Tools
+
+@server.tool(name="listSnowflakeCampaigns", description="List all snowflake SMS campaigns for the authenticated user.")
+def list_snowflake_campaigns_tool(
+    account: Optional[str] = None,
+    page: Optional[int] = None,
+    pageSize: Optional[int] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if page:
+            params["page"] = page
+        if pageSize:
+            params["pageSize"] = pageSize
+        
+        return list_snowflake_campaigns(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getSnowflakeCampaign", description="Get details for a specific snowflake campaign by ID.")
+def get_snowflake_campaign_tool(
+    account: Optional[str] = None,
+    campaignId: str = None
+) -> dict:
+    try:
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "campaignId is required"}]}
+        
+        params = {"campaignId": campaignId}
+        if account:
+            params["accountName"] = account
+        
+        return get_snowflake_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="createSnowflakeCampaign", description="Create a new snowflake SMS campaign. Requires startingdate, expirationdate, daily_start_time, daily_stop_time, and either script (survey data) or template_id.")
+def create_snowflake_campaign_tool(
+    account: Optional[str] = None,
+    name: Optional[str] = None,
+    startingdate: str = None,
+    expirationdate: str = None,
+    daily_start_time: str = None,
+    daily_stop_time: str = None,
+    script: Optional[Dict[str, Any]] = None,
+    template_id: Optional[str] = None,
+    phonebook: Optional[str] = None,
+    agent_brief: Optional[str] = None,
+    timezone: Optional[str] = None,
+    auto_send: Optional[bool] = None,
+    assign_contacts: Optional[bool] = None,
+    thankyou_message: Optional[str] = None,
+    block_id: Optional[str] = None,
+    tags: Optional[List[str]] = None,
+    agent_reminder: Optional[str] = None,
+    monday: Optional[bool] = None,
+    tuesday: Optional[bool] = None,
+    wednesday: Optional[bool] = None,
+    thursday: Optional[bool] = None,
+    friday: Optional[bool] = None,
+    saturday: Optional[bool] = None,
+    sunday: Optional[bool] = None,
+    notes_required: Optional[bool] = None,
+    assign_agents: Optional[bool] = None,
+    agents_selected: Optional[List[str]] = None,
+    use_contact_tz: Optional[bool] = None,
+    opt_out_language: Optional[str] = None,
+    tcr_usecase: Optional[str] = None,
+    sort_order: Optional[int] = None,
+    moderation_enabled: Optional[bool] = None,
+    sender_name: Optional[str] = None,
+    dont_text_litigator: Optional[bool] = None,
+    agent_choice: Optional[str] = None,
+    recommended_replies: Optional[List[Dict[str, Any]]] = None,
+    agent: Optional[List[str]] = None,
+    review_agents: Optional[List[str]] = None
+) -> dict:
+    try:
+        if not all([startingdate, expirationdate, daily_start_time, daily_stop_time]):
+            return {"isError": True, "content": [{"type": "text", "text": "startingdate, expirationdate, daily_start_time, and daily_stop_time are required"}]}
+        
+        params = {
+            "startingdate": startingdate,
+            "expirationdate": expirationdate,
+            "daily_start_time": daily_start_time,
+            "daily_stop_time": daily_stop_time
+        }
+        
+        if account:
+            params["accountName"] = account
+        
+        # Add all optional parameters if provided
+        optional_params = {
+            "name": name, "script": script, "template_id": template_id,
+            "phonebook": phonebook, "agent_brief": agent_brief, "timezone": timezone,
+            "auto_send": auto_send, "assign_contacts": assign_contacts,
+            "thankyou_message": thankyou_message, "block_id": block_id, "tags": tags,
+            "agent_reminder": agent_reminder, "monday": monday, "tuesday": tuesday,
+            "wednesday": wednesday, "thursday": thursday, "friday": friday,
+            "saturday": saturday, "sunday": sunday, "notes_required": notes_required,
+            "assign_agents": assign_agents, "agents_selected": agents_selected,
+            "use_contact_tz": use_contact_tz, "opt_out_language": opt_out_language,
+            "tcr_usecase": tcr_usecase, "sort_order": sort_order,
+            "moderation_enabled": moderation_enabled, "sender_name": sender_name,
+            "dont_text_litigator": dont_text_litigator, "agent_choice": agent_choice,
+            "recommended_replies": recommended_replies, "agent": agent,
+            "review_agents": review_agents
+        }
+        
+        for key, value in optional_params.items():
+            if value is not None:
+                params[key] = value
+        
+        return create_snowflake_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="updateSnowflakeCampaign", description="Update an existing snowflake campaign.")
+def update_snowflake_campaign_tool(
+    account: Optional[str] = None,
+    campaignId: str = None,
+    **kwargs
+) -> dict:
+    try:
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "campaignId is required"}]}
+        
+        params = {"campaignId": campaignId}
+        if account:
+            params["accountName"] = account
+        
+        # Add all other parameters
+        params.update(kwargs)
+        
+        return update_snowflake_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="deleteSnowflakeCampaign", description="Delete a snowflake campaign by ID.")
+def delete_snowflake_campaign_tool(
+    account: Optional[str] = None,
+    campaignId: str = None
+) -> dict:
+    try:
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "campaignId is required"}]}
+        
+        params = {"campaignId": campaignId}
+        if account:
+            params["accountName"] = account
+        
+        return delete_snowflake_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="updateSnowflakeCampaignStatus", description="Update the status of a snowflake campaign. Valid values: 'start', 'pause', 'abort', 'end' or 1-4 numerically.")
+def update_snowflake_campaign_status_tool(
+    account: Optional[str] = None,
+    campaignId: str = None,
+    status: str = None
+) -> dict:
+    try:
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "campaignId is required"}]}
+        if not status:
+            return {"isError": True, "content": [{"type": "text", "text": "status is required"}]}
+        
+        params = {"campaignId": campaignId, "status": status}
+        if account:
+            params["accountName"] = account
+        
+        return update_snowflake_campaign_status(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getSnowflakeCampaignAgents", description="Get agents assigned to a snowflake campaign.")
+def get_snowflake_campaign_agents_tool(
+    account: Optional[str] = None,
+    campaignId: str = None
+) -> dict:
+    try:
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "campaignId is required"}]}
+        
+        params = {"campaignId": campaignId}
+        if account:
+            params["accountName"] = account
+        
+        return get_campaign_agents(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
