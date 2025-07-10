@@ -6,6 +6,7 @@ P2P = Snowflake = Collective Texting in CallHub
 
 import sys
 from typing import Dict, List, Union, Optional, Any
+import json # Added import for json
 
 from .utils import build_url, api_call, get_auth_headers
 from .auth import get_account_config
@@ -25,11 +26,11 @@ def list_p2p_campaigns(params: Dict) -> Dict:
     """
     try:
         # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("account"))
+        account_name, api_key, base_url = get_account_config(params.get("account")) # Reverted to original signature
         
         # Build URL using Snowflake endpoint
-        url = build_url(base_url, "v1/sms_campaigns/?campaign_type=4")
-        headers = get_auth_headers(api_key)
+        url = build_url(base_url, "v1/p2p_campaigns/")
+        headers = get_auth_headers(api_key) # Reverted to original signature
         
         # Prepare query parameters
         query_params = {}
@@ -92,11 +93,11 @@ def update_p2p_campaign(params: Dict) -> Dict:
     
     try:
         # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("account"))
+        account_name, api_key, base_url = get_account_config(params.get("account")) # Reverted to original signature
         
         # Build URL using Snowflake endpoint
-        url = build_url(base_url, "v2/sms_campaign/snowflake/{}/", campaign_id)
-        headers = get_auth_headers(api_key, "application/json")
+        url = build_url(base_url, "v1/p2p_campaigns/{}/", campaign_id)
+        headers = get_auth_headers(api_key, "application/json") # Reverted to original signature
         
         # Prepare data
         data = {"status": status}
@@ -236,31 +237,52 @@ def create_p2p_campaign(params: Dict) -> Dict:
     Create a new P2P (Snowflake) campaign.
     
     Args:
-        params: Dictionary containing the following keys:
+        params: Dictionary containing campaign configuration data including:
             account (str, optional): The account name to use
-            campaign_data (Dict): Campaign configuration data including:
-                - name (str): Campaign name
-                - phonebook (List[str]): List of phonebook URLs
-                - message (str): Campaign message
-                - other campaign-specific settings
+            name (str): Campaign name
+            callerid_options (Dict): Dictionary with caller ID options
+            phonebooks (List): List of phonebook IDs
+            template_id (str): The ID of the survey template to use
     
     Returns:
         dict: API response containing created campaign data or error information
     """
-    campaign_data = params.get("campaign_data")
-    if not campaign_data:
-        return {"isError": True, "content": [{"type": "text", "text": "'campaign_data' is required."}]}
+    campaign_data = params.get("campaign_data", params) # Handle both nested and flat params
+    
+    # Extract required parameters and validate
+    name = campaign_data.get("name")
+    callerid_options = campaign_data.get("callerid_options")
+    phonebooks = campaign_data.get("phonebooks")
+    template_id = campaign_data.get("template_id")
+
+    if not all([name, callerid_options, phonebooks, template_id]):
+        missing_fields = []
+        if name is None: missing_fields.append("name")
+        if callerid_options is None: missing_fields.append("callerid_options")
+        if phonebooks is None: missing_fields.append("phonebooks")
+        return {"isError": True, "content": [{"type": "text", "text": f"Missing required fields: {', '.join(missing_fields)}"}]}
+
+    # Construct the payload for the API call
+    payload = {
+        "name": name,
+        "callerid_options": callerid_options,
+        "phonebooks": phonebooks,
+        "template_id": template_id
+    }
     
     try:
         # Get account configuration
         account_name, api_key, base_url = get_account_config(params.get("account"))
         
         # Build URL using Snowflake endpoint
-        url = build_url(base_url, "v2/sms_campaign/snowflake/")
-        headers = get_auth_headers(api_key, "application/json")
+        url = build_url(base_url, "v1/p2p_campaigns/")
+        headers = get_auth_headers(api_key, "application/json") # Reverted to original signature
+        
+        # Log the payload being sent for debugging
+        sys.stderr.write(f"[callhub] Sending payload: {json.dumps(payload, indent=2)}\n")
         
         # Make API call
-        return api_call("POST", url, headers, json_data=campaign_data)
+        return api_call("POST", url, headers, json_data=payload) # Reverted to original signature
         
     except Exception as e:
         sys.stderr.write(f"[callhub] Error creating P2P campaign: {str(e)}\n")
