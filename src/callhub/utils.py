@@ -223,13 +223,24 @@ def api_call(method: str, url: str, headers: dict, data: Any = None, params: Dic
         
         # Define the function to make the request with error handling
         def make_request():
+            # CRITICAL FIX: Handle SSL certificates for local development
+            # For 0.0.0.0 and localhost, disable SSL verification to avoid certificate errors
+            verify_ssl = True
+            if any(host in url.lower() for host in ['0.0.0.0', 'localhost', '127.0.0.1']):
+                verify_ssl = False
+                # Suppress SSL warnings for local development
+                import urllib3
+                urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+                logger.debug("SSL verification disabled for local development environment")
+            
             resp = requests.request(
                 method=method,
                 url=url,
                 headers=headers,
                 data=data,
                 params=params,
-                json=json_data,verify=False
+                json=json_data,
+                verify=verify_ssl  # FIXED: Use dynamic SSL verification
             )
             
             # Log the response status

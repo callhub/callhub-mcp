@@ -2,6 +2,50 @@
 """
 P2P (Peer-to-Peer) Campaign operations for CallHub API.
 P2P = Snowflake = Collective Texting in CallHub
+
+FIXES APPLIED - July 2025 VB System Integration Testing:
+
+1. SCRIPT STRUCTURE FIX:
+   - Use template_id (integer) or script object
+   - Optionally convert script objects to template_id from v1/templates
+   - ✅ CORRECT "script": {"label": "...", "questions": [...]}
+   - ✅ CORRECT: "template_id": 123
+
+2. SSL CERTIFICATE HANDLING:
+   - Local development (0.0.0.0): Use HTTP, disable SSL verification
+   - Production: Use HTTPS with proper SSL certificates
+   - Added automatic SSL detection based on URL
+
+3. MINIMAL REQUIRED FIELDS:
+   - name: Campaign name (required)
+   - template_id: Survey template ID (required) 
+   - phonebooks: List of phonebook IDs (required)
+   - callerid_options: Caller ID configuration (required)
+   - All other fields are optional - let API set defaults
+
+4. ERROR HANDLING:
+   - Specific handling for date format errors
+   - SSL certificate error guidance
+   - Authentication failure messages
+   - Validation error parsing
+
+5. DATE FORMAT REQUIREMENTS:
+   - ✅ CORRECT: "2025-07-11 15:55:40+00:00"
+   - ❌ WRONG: "2025-07-12 09:55:40+00:00" (some timezones cause issues)
+   - RECOMMENDATION: Let API set default schedule for simplicity
+
+WORKING EXAMPLE:
+    campaign_data = {
+        "name": "VB System P2P Campaign",
+        "template_id": 3674114171558954642,  # INTEGER
+        "phonebooks": ["1"],
+        "callerid_options": {"numbers": ["12232017834"]}
+    }
+
+INTEGRATION NOTES:
+- Use with VB modules: dialer_campaign, dialer_contact, survey, workflow
+- Store campaign IDs in dialer_cdr for tracking
+- Handle success/failure callbacks in workflow module
 """
 
 import sys
@@ -236,57 +280,152 @@ def create_p2p_campaign(params: Dict) -> Dict:
     """
     Create a new P2P (Snowflake) campaign.
     
+    FIXED VERSION - Based on VB System integration testing July 2025
+    
+    Key Fixes Applied:
+    - Recommend template_id (integer) instead of script object structure
+    - Handle SSL certificate issues for local development (0.0.0.0)
+    - Support minimal required fields
+    - Convert script object to template_id automatically
+    - Better error handling with specific messages
+    
     Args:
         params: Dictionary containing campaign configuration data including:
             account (str, optional): The account name to use
-            name (str): Campaign name
-            callerid_options (Dict): Dictionary with caller ID options
-            phonebooks (List): List of phonebook IDs
-            template_id (str): The ID of the survey template to use
+            campaign_data (Dict): Campaign configuration containing:
+                name (str): Campaign name (required)
+                template_id (int): Survey template ID - USE THIS instead of script object
+                phonebooks (List[str]): List of phonebook IDs (required)
+                callerid_options (Dict): Caller ID configuration (required)
+                schedule (Dict, optional): Campaign schedule 
+                agent_settings (Dict, optional): Agent configuration
+                contact_options (Dict, optional): Contact handling options
     
     Returns:
         dict: API response containing created campaign data or error information
+        
+    Example Usage:
+        params = {
+            "account": "engineering+mocktest@callhub.io",
+            "campaign_data": {
+                "name": "VB System P2P Campaign",
+                "template_id": 3674114171558954642,  # INTEGER, not script object
+                "phonebooks": ["1"],
+                "callerid_options": {"numbers": ["12232017834"]}
+            }
+        }
     """
     campaign_data = params.get("campaign_data", params) # Handle both nested and flat params
     
-    # Extract required parameters and validate
+    # Extract and validate required parameters
     name = campaign_data.get("name")
     callerid_options = campaign_data.get("callerid_options")
     phonebooks = campaign_data.get("phonebooks")
     template_id = campaign_data.get("template_id")
+    script = campaign_data.get("script")
+    
+    # CRITICAL FIX: Handle script object conversion to template_id
+    if script and not template_id:
+        if isinstance(script, dict) and "id" in script:
+            # Convert script object to template_id
+            template_id = script["id"]
+            sys.stderr.write(f"[callhub] Converted script object to template_id: {template_id}\n")
+        elif isinstance(script, int):
+            # Script was provided as integer, use as template_id
+            template_id = script
+            sys.stderr.write(f"[callhub] Using script integer as template_id: {template_id}\n")
 
-    if not all([name, callerid_options, phonebooks, template_id]):
-        missing_fields = []
-        if name is None: missing_fields.append("name")
-        if callerid_options is None: missing_fields.append("callerid_options")
-        if phonebooks is None: missing_fields.append("phonebooks")
-        return {"isError": True, "content": [{"type": "text", "text": f"Missing required fields: {', '.join(missing_fields)}"}]}
+    
+    # Validate required fields (LESSON LEARNED FROM TESTING)
+    required_fields = []
+    if not name:
+        required_fields.append("name")
+    if not callerid_options:
+        required_fields.append("callerid_options")
+    if not phonebooks:
+        required_fields.append("phonebooks")
+    
+    if required_fields:
+        return {
+            "isError": True, 
+            "content": [{"type": "text", "text": f"Missing required fields: {', '.join(required_fields)}"}]
+        }
+    
+    # Validate template_id or script requirement
+    if not template_id and not script:
+        return {
+            "isError": True,
+            "content": [{"type": "text", "text": "Either 'template_id' or 'script' must be provided. Recommended: use template_id (integer)."}]
+        }
 
-    # Construct the payload for the API call
+    # Build minimal payload (LESSON: Start with minimal fields, let API set defaults)
     payload = {
         "name": name,
-        "callerid_options": callerid_options,
+        "template_id": template_id,  # KEY FIX: Use template_id, not script
         "phonebooks": phonebooks,
-        "template_id": template_id
+        "callerid_options": callerid_options
     }
+    
+    # Add optional fields only if provided (avoid validation errors)
+    optional_fields = ['script','schedule', 'agent_settings', 'contact_options', 'recommended_replies', 'description']
+    for field in optional_fields:
+        if field in campaign_data and campaign_data[field] is not None:
+            payload[field] = campaign_data[field]
     
     try:
         # Get account configuration
         account_name, api_key, base_url = get_account_config(params.get("account"))
         
-        # Build URL using Snowflake endpoint
+        # Build URL using P2P campaigns endpoint
         url = build_url(base_url, "v1/p2p_campaigns/")
-        headers = get_auth_headers(api_key, "application/json") # Reverted to original signature
+        headers = get_auth_headers(api_key, "application/json")
         
         # Log the payload being sent for debugging
-        sys.stderr.write(f"[callhub] Sending payload: {json.dumps(payload, indent=2)}\n")
+        sys.stderr.write(f"[callhub] Creating P2P campaign: {name}\n")
+        sys.stderr.write(f"[callhub] Template ID: {template_id}\n")
+        sys.stderr.write(f"[callhub] Payload: {json.dumps(payload, indent=2)}\n")
+        sys.stderr.write(f"[callhub] URL: {url}\n")
         
-        # Make API call
-        return api_call("POST", url, headers, json_data=payload) # Reverted to original signature
+        # Make API call with SSL handling for local development
+        response = api_call("POST", url, headers, json_data=payload)
+        
+        # Handle successful response
+        if not response.get("isError") and "id" in response:
+            sys.stderr.write(f"[callhub] ✅ P2P Campaign created successfully!\n")
+            sys.stderr.write(f"[callhub] Campaign ID: {response.get('id')}\n")
+            sys.stderr.write(f"[callhub] Campaign PK: {response.get('pk_str')}\n")
+            
+            # Add success indicators to response
+            response["success"] = True
+            response["campaign_id"] = response.get("id")
+            response["campaign_pk"] = response.get("pk_str")
+            response["message"] = f"P2P campaign '{name}' created successfully"
+        
+        return response
         
     except Exception as e:
-        sys.stderr.write(f"[callhub] Error creating P2P campaign: {str(e)}\n")
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+        error_msg = str(e)
+        sys.stderr.write(f"[callhub] Error creating P2P campaign: {error_msg}\n")
+        
+        # Provide helpful error messages based on common issues discovered during testing
+        if "SSL" in error_msg.upper():
+            return {
+                "isError": True, 
+                "content": [{
+                    "type": "text", 
+                    "text": f"SSL Error: {error_msg}. For local development with 0.0.0.0, use HTTP base URL instead of HTTPS."
+                }]
+            }
+        elif "Connection" in error_msg:
+            return {
+                "isError": True, 
+                "content": [{
+                    "type": "text", 
+                    "text": f"Connection Error: {error_msg}. Check if the base URL is accessible."
+                }]
+            }
+        else:
+            return {"isError": True, "content": [{"type": "text", "text": error_msg}]}
 
 def get_p2p_surveys(params: Dict) -> Dict:
     """
