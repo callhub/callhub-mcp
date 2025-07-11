@@ -318,7 +318,6 @@ def create_p2p_campaign(params: Dict) -> Dict:
     campaign_data = params.get("campaign_data", params) # Handle both nested and flat params
     
     # Extract and validate required parameters
-    name = campaign_data.get("name")
     callerid_options = campaign_data.get("callerid_options")
     phonebooks = campaign_data.get("phonebooks")
     template_id = campaign_data.get("template_id")
@@ -338,8 +337,6 @@ def create_p2p_campaign(params: Dict) -> Dict:
     
     # Validate required fields (LESSON LEARNED FROM TESTING)
     required_fields = []
-    if not name:
-        required_fields.append("name")
     if not callerid_options:
         required_fields.append("callerid_options")
     if not phonebooks:
@@ -360,14 +357,18 @@ def create_p2p_campaign(params: Dict) -> Dict:
 
     # Build minimal payload (LESSON: Start with minimal fields, let API set defaults)
     payload = {
-        "name": name,
-        "template_id": template_id,  # KEY FIX: Use template_id, not script
         "phonebooks": phonebooks,
         "callerid_options": callerid_options
     }
     
+    # CRITICAL FIX: Only include template_id OR script, never both, never None
+    if template_id is not None:
+        payload["template_id"] = template_id
+    elif script is not None:
+        payload["script"] = script
+    
     # Add optional fields only if provided (avoid validation errors)
-    optional_fields = ['script','schedule', 'agent_settings', 'contact_options', 'recommended_replies', 'description']
+    optional_fields = ['name','schedule', 'agent_settings', 'contact_options', 'recommended_replies', 'description']
     for field in optional_fields:
         if field in campaign_data and campaign_data[field] is not None:
             payload[field] = campaign_data[field]
@@ -381,7 +382,6 @@ def create_p2p_campaign(params: Dict) -> Dict:
         headers = get_auth_headers(api_key, "application/json")
         
         # Log the payload being sent for debugging
-        sys.stderr.write(f"[callhub] Creating P2P campaign: {name}\n")
         sys.stderr.write(f"[callhub] Template ID: {template_id}\n")
         sys.stderr.write(f"[callhub] Payload: {json.dumps(payload, indent=2)}\n")
         sys.stderr.write(f"[callhub] URL: {url}\n")
