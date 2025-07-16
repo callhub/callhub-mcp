@@ -399,7 +399,6 @@ def create_p2p_campaign(params: Dict) -> Dict:
             response["success"] = True
             response["campaign_id"] = response.get("id")
             response["campaign_pk"] = response.get("pk_str")
-            response["message"] = f"P2P campaign '{name}' created successfully"
         
         return response
         
