@@ -109,45 +109,21 @@ def update_p2p_campaign(params: Dict) -> Dict:
     campaign_id = params.get("campaignId")
     if not campaign_id:
         return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
-    
-    status = params.get("status")
-    if status is None:
-        return {"isError": True, "content": [{"type": "text", "text": "'status' is required."}]}
-    
+
     # Map string status to numeric status if needed
-    status_mapping = {
-        "start": 1,
-        "pause": 2,
-        "abort": 3,
-        "end": 4
-    }
-    
-    # If a string status was provided, convert it to numeric
-    if isinstance(status, str) and status.lower() in status_mapping:
-        status = status_mapping[status.lower()]
-    # If a numeric status as string was provided, convert to int
-    elif isinstance(status, str) and status.isdigit():
-        status = int(status)
-    # Check if status is valid now
-    if not isinstance(status, int) or status < 1 or status > 4:
-        return {
-            "isError": True, 
-            "content": [{"type": "text", "text": "Valid 'status' is required: start, pause, abort, end, or a valid numeric status (1-4)"}]
-        }
-    
+
     try:
         # Get account configuration
         account_name, api_key, base_url = get_account_config(params.get("account")) # Reverted to original signature
         
         # Build URL using Snowflake endpoint
-        url = build_url(base_url, "v1/p2p_campaigns/{}/", campaign_id)
+        url = build_url(base_url, "v2/sms_campaign/snowflake/{}/", campaign_id)
         headers = get_auth_headers(api_key, "application/json") # Reverted to original signature
         
         # Prepare data
-        data = {"status": status}
         
         # Make API call
-        return api_call("PUT", url, headers, json_data=data)
+        return api_call("PUT", url, headers, json_data=params)
         
     except Exception as e:
         sys.stderr.write(f"[callhub] Error updating P2P campaign: {str(e)}\n")
