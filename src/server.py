@@ -101,6 +101,14 @@ from callhub.numbers import (
     list_rented_numbers,
     list_validated_numbers,
     rent_number,
+    get_area_codes,
+    get_number_rent_rates,
+    get_auto_unrent_settings,
+    update_auto_unrent_settings,
+    revalidate_numbers,
+    list_sms_only_numbers,
+    list_combined_sms_numbers,
+    auto_rent_sms_number
 )
 
 from callhub.voice_broadcasts import (
@@ -202,6 +210,16 @@ from callhub.survey_templates import (
     update_survey_template,
     delete_survey_template,
     create_question_template
+)
+
+from callhub.questions import (
+    list_questions,
+    get_question
+)
+
+from callhub.integration_fields import (
+    list_integration_fields,
+    get_integration_field
 )
 
 from callhub.utils import parse_input_fields
@@ -2252,6 +2270,213 @@ def create_question_template_tool(
             params["is_initial_message"] = is_initial_message
         
         return create_question_template(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+# Questions Management Tools
+
+@server.tool(name="listQuestions", description="List all questions with optional type filtering (PDI_QUESTION, VAN_QUESTION).")
+def list_questions_tool(
+    account: Optional[str] = None,
+    type: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if type:
+            params["type"] = type
+        
+        return list_questions(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getQuestion", description="Get details for a specific question by ID.")
+def get_question_tool(
+    account: Optional[str] = None,
+    questionId: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if questionId:
+            params["questionId"] = questionId
+        
+        return get_question(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+# Integration Fields Management Tools
+
+@server.tool(name="listIntegrationFields", description="List all integration fields.")
+def list_integration_fields_tool(
+    account: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        
+        return list_integration_fields(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getIntegrationField", description="Get details for a specific integration field by ID.")
+def get_integration_field_tool(
+    account: Optional[str] = None,
+    fieldId: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if fieldId:
+            params["fieldId"] = fieldId
+        
+        return get_integration_field(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+# Extended Number Management Tools
+
+@server.tool(name="getAreaCodes", description="Get area codes for a specific country.")
+def get_area_codes_tool(
+    account: Optional[str] = None,
+    country_iso: str = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if country_iso:
+            params["country_iso"] = country_iso
+        
+        return get_area_codes(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getNumberRentRates", description="Get number rent rates for a specific country.")
+def get_number_rent_rates_tool(
+    account: Optional[str] = None,
+    country_iso: str = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if country_iso:
+            params["country_iso"] = country_iso
+        
+        return get_number_rent_rates(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getAutoUnrentSettings", description="Get auto-unrent settings.")
+def get_auto_unrent_settings_tool(
+    account: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        
+        return get_auto_unrent_settings(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="updateAutoUnrentSettings", description="Update auto-unrent settings.")
+def update_auto_unrent_settings_tool(
+    account: Optional[str] = None,
+    auto_unrent_enabled: Optional[bool] = None,
+    threshold_days: Optional[int] = None,
+    numbers_to_exclude: Optional[List[str]] = None,
+    email_reminders_enabled: Optional[bool] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if auto_unrent_enabled is not None:
+            params["auto_unrent_enabled"] = auto_unrent_enabled
+        if threshold_days is not None:
+            params["threshold_days"] = threshold_days
+        if numbers_to_exclude is not None:
+            params["numbers_to_exclude"] = numbers_to_exclude
+        if email_reminders_enabled is not None:
+            params["email_reminders_enabled"] = email_reminders_enabled
+        
+        return update_auto_unrent_settings(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="revalidateNumbers", description="Revalidate phone numbers.")
+def revalidate_numbers_tool(
+    account: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        
+        return revalidate_numbers(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="listSmsOnlyNumbers", description="List SMS-only rented numbers.")
+def list_sms_only_numbers_tool(
+    account: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        
+        return list_sms_only_numbers(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="listCombinedSmsNumbers", description="List combined validated and rented SMS numbers.")
+def list_combined_sms_numbers_tool(
+    account: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        
+        return list_combined_sms_numbers(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="autoRentSmsNumber", description="Auto-rent SMS number.")
+def auto_rent_sms_number_tool(
+    account: Optional[str] = None,
+    country_iso: str = None,
+    feature: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if country_iso:
+            params["country_iso"] = country_iso
+        if feature:
+            params["feature"] = feature
+        
+        return auto_rent_sms_number(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
