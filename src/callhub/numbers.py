@@ -108,3 +108,230 @@ def rent_number(params: Dict) -> Dict:
     except Exception as e:
         sys.stderr.write(f"[callhub] Error renting number: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+def get_area_codes(params: Dict) -> Dict:
+    """
+    Get area codes for a specific country.
+    
+    Args:
+        params: Dictionary containing the following keys:
+            accountName (str, optional): The account name to use
+            country_iso (str): The country ISO code (e.g., "US")
+    
+    Returns:
+        dict: API response containing area codes or error information
+    """
+    try:
+        account_name, api_key, base_url = get_account_config(params.get("accountName"))
+        
+        country_iso = params.get("country_iso")
+        if not country_iso:
+            return {"isError": True, "content": [{"type": "text", "text": "country_iso is required"}]}
+        
+        url = build_url(base_url, f"v2/get_area_code/?country_iso={country_iso}")
+        headers = get_auth_headers(api_key)
+        
+        return api_call("GET", url, headers)
+        
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error getting area codes: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+def get_number_rent_rates(params: Dict) -> Dict:
+    """
+    Get number rent rates for a specific country.
+    
+    Args:
+        params: Dictionary containing the following keys:
+            accountName (str, optional): The account name to use
+            country_iso (str): The country ISO code (e.g., "US")
+    
+    Returns:
+        dict: API response containing rent rates or error information
+    """
+    try:
+        account_name, api_key, base_url = get_account_config(params.get("accountName"))
+        
+        country_iso = params.get("country_iso")
+        if not country_iso:
+            return {"isError": True, "content": [{"type": "text", "text": "country_iso is required"}]}
+        
+        url = build_url(base_url, f"v1/number_rent_rates/?country_iso={country_iso}")
+        headers = get_auth_headers(api_key)
+        
+        return api_call("GET", url, headers)
+        
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error getting rent rates: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+def get_auto_unrent_settings(params: Dict) -> Dict:
+    """
+    Get auto-unrent settings.
+    
+    Args:
+        params: Dictionary containing the following keys:
+            accountName (str, optional): The account name to use
+    
+    Returns:
+        dict: API response containing auto-unrent settings or error information
+    """
+    try:
+        account_name, api_key, base_url = get_account_config(params.get("accountName"))
+        
+        url = build_url(base_url, "v2/auto_unrent/settings/")
+        headers = get_auth_headers(api_key)
+        
+        return api_call("GET", url, headers)
+        
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error getting auto-unrent settings: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+def update_auto_unrent_settings(params: Dict) -> Dict:
+    """
+    Update auto-unrent settings.
+    
+    Args:
+        params: Dictionary containing the following keys:
+            accountName (str, optional): The account name to use
+            auto_unrent_enabled (bool): Enable/disable auto-unrent
+            threshold_days (int): Days threshold for auto-unrent
+            numbers_to_exclude (list): List of number IDs to exclude
+            email_reminders_enabled (bool): Enable/disable email reminders
+    
+    Returns:
+        dict: API response containing updated settings or error information
+    """
+    try:
+        account_name, api_key, base_url = get_account_config(params.get("accountName"))
+        
+        url = build_url(base_url, "v2/auto_unrent/settings/")
+        headers = get_auth_headers(api_key, "application/json")
+        
+        data = {}
+        if "auto_unrent_enabled" in params:
+            data["auto_unrent_enabled"] = params["auto_unrent_enabled"]
+        if "threshold_days" in params:
+            data["threshold_days"] = params["threshold_days"]
+        if "numbers_to_exclude" in params:
+            data["numbers_to_exclude"] = params["numbers_to_exclude"]
+        if "email_reminders_enabled" in params:
+            data["email_reminders_enabled"] = params["email_reminders_enabled"]
+        
+        return api_call("POST", url, headers, json_data=data)
+        
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error updating auto-unrent settings: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+def revalidate_numbers(params: Dict) -> Dict:
+    """
+    Revalidate phone numbers.
+    
+    Args:
+        params: Dictionary containing the following keys:
+            accountName (str, optional): The account name to use
+    
+    Returns:
+        dict: API response containing revalidation results or error information
+    """
+    try:
+        account_name, api_key, base_url = get_account_config(params.get("accountName"))
+        
+        url = build_url(base_url, "v1/revalidate_numbers/")
+        headers = get_auth_headers(api_key, "application/json")
+        
+        return api_call("POST", url, headers)
+        
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error revalidating numbers: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+def list_sms_only_numbers(params: Dict) -> Dict:
+    """
+    List SMS-only rented numbers.
+    
+    Args:
+        params: Dictionary containing the following keys:
+            accountName (str, optional): The account name to use
+    
+    Returns:
+        dict: API response containing SMS-only numbers or error information
+    """
+    try:
+        account_name, api_key, base_url = get_account_config(params.get("accountName"))
+        
+        url = build_url(base_url, "v2/sms_number/show_rented_number/")
+        headers = get_auth_headers(api_key)
+        
+        return api_call("GET", url, headers)
+        
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error listing SMS-only numbers: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+def list_combined_sms_numbers(params: Dict) -> Dict:
+    """
+    List combined validated and rented SMS numbers.
+    
+    Args:
+        params: Dictionary containing the following keys:
+            accountName (str, optional): The account name to use
+    
+    Returns:
+        dict: API response containing combined SMS numbers or error information
+    """
+    try:
+        account_name, api_key, base_url = get_account_config(params.get("accountName"))
+        
+        url = build_url(base_url, "v2/validated_and_rented_numbers/")
+        headers = get_auth_headers(api_key)
+        
+        return api_call("GET", url, headers)
+        
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error listing combined SMS numbers: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+def auto_rent_sms_number(params: Dict) -> Dict:
+    """
+    Auto-rent SMS number.
+    
+    Args:
+        params: Dictionary containing the following keys:
+            accountName (str, optional): The account name to use
+            country_iso (str): The country ISO code (e.g., "US")
+            feature (str): The feature type (default: "sms")
+    
+    Returns:
+        dict: API response containing rented SMS number or error information
+    """
+    try:
+        account_name, api_key, base_url = get_account_config(params.get("accountName"))
+        
+        country_iso = params.get("country_iso")
+        if not country_iso:
+            return {"isError": True, "content": [{"type": "text", "text": "country_iso is required"}]}
+        
+        url = build_url(base_url, "v2/sms_number/sms_rent_number/")
+        headers = get_auth_headers(api_key, "application/json")
+        
+        data = {
+            "country_iso": country_iso,
+            "feature": params.get("feature", "sms")
+        }
+        
+        return api_call("POST", url, headers, json_data=data)
+        
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error auto-renting SMS number: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
