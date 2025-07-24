@@ -222,6 +222,18 @@ from callhub.integration_fields import (
     get_integration_field
 )
 
+from callhub.urls import (
+    createShortenedUrl,
+    getShortenedUrl,
+    listShortenedUrls
+)
+
+from callhub.api_utils import (
+    getApiSchema,
+    getApiVersion,
+    getApiStatus
+)
+
 from callhub.utils import parse_input_fields
 
 # Load .env (for CALLHUB_ACCOUNT, etc.)
@@ -2482,6 +2494,106 @@ def auto_rent_sms_number_tool(
 
 
 # openTerminalWithLogs function removed for security reasons
+
+
+# Shortened URL Management Tools
+
+@server.tool(name="createShortenedUrl", description="Create a shortened URL for CallHub tracking.")
+def create_shortened_url_tool(
+    account: Optional[str] = None,
+    url: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if url:
+            params["url"] = url
+        
+        return createShortenedUrl(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getShortenedUrl", description="Get details of a shortened URL by its short code.")
+def get_shortened_url_tool(
+    account: Optional[str] = None,
+    shortCode: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if shortCode:
+            params["shortCode"] = shortCode
+        
+        return getShortenedUrl(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="listShortenedUrls", description="List all shortened URLs with optional pagination.")
+def list_shortened_urls_tool(
+    account: Optional[str] = None,
+    page: Optional[int] = None,
+    pageSize: Optional[int] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if page is not None:
+            params["page"] = page
+        if pageSize is not None:
+            params["pageSize"] = pageSize
+        
+        return listShortenedUrls(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+# API Schema and Utilities Tools
+
+@server.tool(name="getApiSchema", description="Get the complete API schema documentation.")
+def get_api_schema_tool(
+    account: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        
+        return getApiSchema(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getApiVersion", description="Get the current API version information.")
+def get_api_version_tool(
+    account: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        
+        return getApiVersion(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getApiStatus", description="Check the API status and health.")
+def get_api_status_tool(
+    account: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        
+        return getApiStatus(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
 if __name__ == "__main__":
