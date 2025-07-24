@@ -223,15 +223,12 @@ from callhub.integration_fields import (
 )
 
 from callhub.urls import (
-    createShortenedUrl,
     getShortenedUrl,
     listShortenedUrls
 )
 
 from callhub.api_utils import (
-    getApiSchema,
-    getApiVersion,
-    getApiStatus
+    getApiSchema
 )
 
 from callhub.utils import parse_input_fields
@@ -2498,21 +2495,6 @@ def auto_rent_sms_number_tool(
 
 # Shortened URL Management Tools
 
-@server.tool(name="createShortenedUrl", description="Create a shortened URL for CallHub tracking.")
-def create_shortened_url_tool(
-    account: Optional[str] = None,
-    url: Optional[str] = None
-) -> dict:
-    try:
-        params = {}
-        if account:
-            params["accountName"] = account
-        if url:
-            params["url"] = url
-        
-        return createShortenedUrl(params)
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
 @server.tool(name="getShortenedUrl", description="Get details of a shortened URL by its short code.")
@@ -2567,33 +2549,6 @@ def get_api_schema_tool(
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-
-@server.tool(name="getApiVersion", description="Get the current API version information.")
-def get_api_version_tool(
-    account: Optional[str] = None
-) -> dict:
-    try:
-        params = {}
-        if account:
-            params["accountName"] = account
-        
-        return getApiVersion(params)
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
-
-
-@server.tool(name="getApiStatus", description="Check the API status and health.")
-def get_api_status_tool(
-    account: Optional[str] = None
-) -> dict:
-    try:
-        params = {}
-        if account:
-            params["accountName"] = account
-        
-        return getApiStatus(params)
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
 if __name__ == "__main__":
