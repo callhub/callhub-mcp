@@ -138,3 +138,49 @@ def delete_sms_broadcast(params: Dict) -> Dict:
     except Exception as e:
         sys.stderr.write(f"[callhub] Error deleting SMS broadcast campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+def create_sms_broadcast(params: Dict) -> Dict:
+    """
+    Create a new SMS broadcast campaign.
+
+    Args:
+        params: Dictionary containing the following keys:
+            account (str, optional): The account name to use
+            name (str): Name of the campaign
+            phonebook_ids (list): List of phonebook IDs
+            message (str): SMS message content
+            sender_id (str): Sender ID
+            schedule_date (str, optional): Scheduled date (ISO format)
+
+    Returns:
+        dict: API response containing the created campaign data
+    """
+    # Validate required parameters
+    for key in ["name", "phonebook_ids", "message", "sender_id"]:
+        if not params.get(key):
+            return {"isError": True, "content": [{"type": "text", "text": f"'{key}' is required."}]}
+
+    try:
+        # Get account configuration
+        account_name, api_key, base_url = get_account_config(params.get("account"))
+
+        # Build URL and headers
+        url = build_url(base_url, "v2/sms_broadcast/create/")
+        headers = get_auth_headers(api_key, "application/json")
+
+        # Prepare data
+        data = {
+            "name": params["name"],
+            "phonebook_ids": params["phonebook_ids"],
+            "message": params["message"],
+            "sender_id": params["sender_id"]
+        }
+        if params.get("schedule_date"):
+            data["schedule_date"] = params["schedule_date"]
+
+        # Make API call
+        return api_call("POST", url, headers, json_data=data)
+
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error creating SMS broadcast campaign: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
