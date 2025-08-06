@@ -90,7 +90,7 @@ def add_account(env_file, is_default=False):
     
     base_url = get_input(
         "CallHub API base URL",
-        default="https://api-na1.callhub.io",
+        default="https://api.callhub.io",
         validator=validate_url
     )
     

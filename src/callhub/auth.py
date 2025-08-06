@@ -12,7 +12,7 @@ from dotenv import load_dotenv, find_dotenv, set_key
 # Setup basic logging
 logging.basicConfig(
     level=os.environ.get("LOG_LEVEL", "INFO"),
-    format="[callhub] %(asctime)s - %(levelname)s - %(message)s"
+    format="[callhub] %(asctime)s - %(levelname)s - %(message)s"  # Important!
 )
 logger = logging.getLogger("callhub")
 

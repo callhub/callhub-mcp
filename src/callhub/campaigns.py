@@ -325,5 +325,184 @@ def create_call_center_campaign(params: Dict) -> Dict:
         return api_call("POST", url, headers, json_data=campaign_data)
         
     except Exception as e:
-        sys.stderr.write(f"[callhub] Error creating call center campaign: {str(e)}\n")
+        sys.stderr.write(f"[callhub] Error creating call center campaign: {str(e)}")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+def exportCampaignData(params: Dict) -> Dict:
+    """
+    Export campaign data in specified format.
+    
+    Args:
+        params: Dictionary containing the following keys:
+            accountName (str, optional): The account name to use
+            campaignId (str): The ID of the campaign to export
+            format (str, optional): Export format (csv, json). Defaults to 'csv'
+    
+    Returns:
+        dict: API response containing the exported data or error information
+    """
+    try:
+        # Validate required parameters
+        campaign_id = params.get("campaignId")
+        if not campaign_id:
+            return {"isError": True, "content": [{"type": "text", "text": "Campaign ID is required"}]}
+        
+        # Get account configuration
+        account_name, api_key, base_url = get_account_config(params.get("accountName"))
+        
+        # Build URL and headers
+        url = build_url(base_url, f"v1/campaigns/{campaign_id}/export")
+        headers = get_auth_headers(api_key)
+        
+        # Prepare query parameters
+        query_params = {
+            "format": params.get("format", "csv")
+        }
+        
+        # Make API call
+        return api_call("GET", url, headers, params=query_params)
+        
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error exporting campaign data: {str(e)}")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+def getCampaignStatsAdvanced(params: Dict) -> Dict:
+    """
+    Get enhanced campaign statistics.
+    
+    Args:
+        params: Dictionary containing the following keys:
+            accountName (str, optional): The account name to use
+            campaignId (str): The ID of the campaign to get stats for
+            includeDetails (bool, optional): Include detailed statistics. Defaults to True
+    
+    Returns:
+        dict: API response containing campaign statistics or error information
+    """
+    try:
+        # Validate required parameters
+        campaign_id = params.get("campaignId")
+        if not campaign_id:
+            return {"isError": True, "content": [{"type": "text", "text": "Campaign ID is required"}]}
+        
+        # Get account configuration
+        account_name, api_key, base_url = get_account_config(params.get("accountName"))
+        
+        # Build URL and headers
+        url = build_url(base_url, f"v1/campaigns/{campaign_id}/stats")
+        headers = get_auth_headers(api_key)
+        
+        # Prepare query parameters
+        query_params = {
+            "details": params.get("includeDetails", True)
+        }
+        
+        # Make API call
+        return api_call("GET", url, headers, params=query_params)
+        
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error getting campaign stats: {str(e)}")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+def duplicate_power_campaign(params: Dict) -> Dict:
+    """
+    Duplicates an existing PowerCampaign using the dedicated duplicate API.
+
+    Args:
+        params: Dictionary containing the duplication configuration:
+            accountName (str, optional): The account name to use.
+            campaign_id (int): ID of the original campaign to duplicate.
+            phonebook_ids (list): List of phonebook IDs for the new campaign.
+            assign_all_agents (bool): Whether to assign all agents.
+            target_account (str, optional): Username of target account.
+            name (str, optional): Custom name for the duplicated campaign.
+
+    Returns:
+        dict: API response with details of the duplicated campaign or an error.
+    """
+    # Validate required parameters
+    required_fields = ["campaign_id", "phonebook_ids", "assign_all_agents"]
+    missing_fields = [field for field in required_fields if field not in params]
+    if missing_fields:
+        return {
+            "isError": True,
+            "content": [{"type": "text", "text": f"Missing required fields: {', '.join(missing_fields)}"}]
+        }
+
+    try:
+        # Get account configuration
+        account_name, api_key, base_url = get_account_config(params.get("accountName"))
+
+        # Build URL and headers
+        url = build_url(base_url, "v1/power_campaign/duplicate/")
+        headers = get_auth_headers(api_key, "application/json")
+
+        # Prepare data payload
+        data = {
+            "campaign_id": params["campaign_id"],
+            "phonebook_ids": params["phonebook_ids"],
+            "assign_all_agents": params["assign_all_agents"],
+        }
+
+        # Add optional parameters
+        optional_fields = [
+            "target_account", "name", "callerid", "callerid_block",
+            "textid", "dialin"
+        ]
+        for field in optional_fields:
+            if field in params:
+                data[field] = params[field]
+
+        # Make API call
+        return api_call("POST", url, headers, json_data=data)
+
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error duplicating power campaign: {str(e)}")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+def get_media_files(params: Dict) -> Dict:
+    """
+    Retrieves a list of media files from the CallHub account.
+
+    Args:
+        params: Dictionary containing the following keys:
+            accountName (str, optional): The account name to use.
+            sort_by (str, optional): Sort order for the results (default: -updated_date).
+            offset (int, optional): The starting position of the query (default: 0).
+            limit (int, optional): The maximum number of results to return.
+            name (str, optional): Filter by media file name.
+            media_type (str, optional): Filter by the type of media.
+            exclude_type (str, optional): Exclude a media type from the results.
+
+    Returns:
+        dict: API response containing the list of media files or an error.
+    """
+    try:
+        # Get account configuration
+        account_name, api_key, base_url = get_account_config(params.get("accountName"))
+
+        # Build URL and headers
+        url = build_url(base_url, "v2/media/")
+        headers = get_auth_headers(api_key)
+
+        # Prepare query parameters
+        query_params = {}
+        if params.get("sort_by"):
+            query_params["sort_by"] = params["sort_by"]
+        if params.get("offset"):
+            query_params["offset"] = params["offset"]
+        if params.get("limit"):
+            query_params["limit"] = params["limit"]
+        if params.get("name"):
+            query_params["name"] = params["name"]
+        if params.get("media_type"):
+            query_params["media_type"] = params["media_type"]
+        if params.get("exclude_type"):
+            query_params["exclude_type"] = params["exclude_type"]
+
+        # Make API call
+        return api_call("GET", url, headers, params=query_params)
+
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error getting media files: {str(e)}")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

@@ -1,4 +1,76 @@
 #!/usr/bin/env python3
+"""CallHub MCP Server - Auto-builds dependencies if needed"""
+
+import sys
+from pathlib import Path
+
+from callhub.logging import logger
+from callhub.voice_broadcasts import list_voice_broadcasts
+
+# Add server/lib to Python path
+server_dir = Path( __file__ ).parent
+lib_path = server_dir / "lib"
+if lib_path.exists() :
+    sys.path.insert( 0 , str( lib_path ) )
+
+
+# Try to import required packages
+def check_dependencies () :
+    """Check if all dependencies are available"""
+    try :
+        import mcp
+        import pydantic
+        import dotenv
+        import requests
+        import selenium
+        import urllib3
+        return True
+    except ImportError as e :
+        logger.info( f"⚠️  Missing dependency: {e}" )
+        return False
+
+
+def build_dependencies () :
+    """Build dependencies into server/lib"""
+    import subprocess
+    import shutil
+
+    logger.info( "📦 Installing dependencies..." )
+
+    project_root = Path( __file__ ).parent.parent
+    lib_path = Path( __file__ ).parent / "lib"
+
+    # Clean and create lib directory
+    if lib_path.exists() :
+        shutil.rmtree( lib_path )
+    lib_path.mkdir( parents = True )
+
+    # Install dependencies
+    requirements_file = project_root / "requirements.txt"
+    if requirements_file.exists() :
+        subprocess.run( [ sys.executable , "-m" , "pip" , "install" , "--target" , str( lib_path ) , "-r" ,
+            str( requirements_file ) ] , check = True,stdout=sys.stderr, stderr=sys.stderr )
+        logger.info( "✅ Dependencies installed!" )
+        return True
+    else :
+        logger.info( "❌ requirements.txt not found!" )
+        return False
+
+
+# Check and build if needed
+if not check_dependencies() :
+    logger.info( "🔧 Dependencies missing. Building..." )
+    if build_dependencies() :
+        # Add lib to path again after building
+        sys.path.insert( 0 , str( lib_path ) )
+
+        # Verify dependencies are now available
+        if not check_dependencies() :
+            logger.info( "❌ Failed to install dependencies!" )
+            sys.exit( 1 )
+    else :
+        sys.exit( 1 )
+
 
 """
 CallHub MCP Server - Main Module
@@ -25,9 +97,8 @@ This is critical for ensuring code changes take effect before testing.
 # 3. Wait for explicit confirmation that the restart is complete
 # 4. Only then proceed with testing the changes
 
-import os
+
 import sys
-import json
 import datetime
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
@@ -90,12 +161,9 @@ from callhub.dnc import (
     delete_dnc_list
 )
 
-from callhub.campaigns import (
-    list_call_center_campaigns,
-    update_call_center_campaign,
-    delete_call_center_campaign,
-    create_call_center_campaign,
-)
+from callhub.campaigns import (list_call_center_campaigns , update_call_center_campaign , delete_call_center_campaign ,
+                               create_call_center_campaign , exportCampaignData  ,
+                               getCampaignStatsAdvanced , get_media_files , duplicate_power_campaign  )
 
 from callhub.numbers import (
     list_rented_numbers,
@@ -111,10 +179,10 @@ from callhub.numbers import (
     auto_rent_sms_number
 )
 
-from callhub.voice_broadcasts import (
-    list_voice_broadcasts,
-    update_voice_broadcast,
-    delete_voice_broadcast
+from callhub.vb_campaigns import (
+    get_vb_campaign,
+    create_vb_campaign,
+    create_vb_campaign_template,
 )
 
 from callhub.sms_campaigns import (
@@ -1137,6 +1205,109 @@ def create_call_center_campaign_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
+@server.tool(name="duplicatePowerCampaign", description="Duplicates a PowerCampaign with specified parameters.")
+def duplicate_power_campaign_tool(
+    campaign_id: int,
+    phonebook_ids: List[int],
+    assign_all_agents: bool,
+    account: Optional[str] = None,
+    target_account: Optional[str] = None,
+    name: Optional[str] = None,
+    callerid: Optional[Dict] = None,
+    callerid_block: Optional[Dict] = None,
+    textid: Optional[Dict] = None,
+    dialin: Optional[Dict] = None
+) -> dict:
+    try:
+        params = {
+            "campaign_id": campaign_id,
+            "phonebook_ids": phonebook_ids,
+            "assign_all_agents": assign_all_agents,
+        }
+        if account:
+            params["accountName"] = account
+        if target_account:
+            params["target_account"] = target_account
+        if name:
+            params["name"] = name
+        if callerid:
+            params["callerid"] = callerid
+        if callerid_block:
+            params["callerid_block"] = callerid_block
+        if textid:
+            params["textid"] = textid
+        if dialin:
+            params["dialin"] = dialin
+
+        # This function is expected to be in callhub/utils.py
+        return duplicate_power_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+@server.tool(name="exportCampaignData", description="Export campaign data in specified format.")
+def export_campaign_data_tool(
+    account: Optional[str] = None,
+    campaignId: str = None,
+    format: str = "csv"
+) -> dict:
+    try:
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+        params = {"campaignId": campaignId, "format": format}
+        if account:
+            params["accountName"] = account
+
+        return exportCampaignData(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+@server.tool(name="getCampaignStatsAdvanced", description="Get enhanced campaign statistics.")
+def get_campaign_stats_advanced_tool(
+    account: Optional[str] = None,
+    campaignId: str = None,
+    includeDetails: bool = True
+) -> dict:
+    try:
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+        params = {"campaignId": campaignId, "includeDetails": includeDetails}
+        if account:
+            params["accountName"] = account
+
+        return getCampaignStatsAdvanced(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getMediaFiles", description="Retrieve a list of media files (audio, images, videos) uploaded to CallHub. Supports pagination.")
+def get_media_files_tool(
+    account: Optional[str] = None,
+    page: Optional[int] = None,
+    pageSize: Optional[int] = None,
+    file_type: Optional[str] = None, # 'audio', 'image', 'video'
+    search: Optional[str] = None # Search by file name
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if page is not None:
+            params["page"] = page
+        if pageSize is not None:
+            params["pageSize"] = pageSize
+        if file_type:
+            params["file_type"] = file_type
+        if search:
+            params["search"] = search
+
+        # Assuming a function `list_media_files` exists in `callhub.media`
+        return get_media_files(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
 # Phone Number Management Tools
 
 @server.tool(name="listRentedNumbers", description="List all rented calling numbers (caller IDs) for the account.")
@@ -1175,50 +1346,50 @@ def list_voice_broadcast_campaigns_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="updateVoiceBroadcastCampaign", description="Update a voice broadcast campaign's status. Valid values: 'start', 'pause', 'abort', 'end' or 1-4 numerically.")
-def update_voice_broadcast_campaign_tool(
-    account: Optional[str] = None,
-    campaignId: str = None,
-    status: str = None # Kept as str to match other update_campaign tools, conversion happens in the module
-) -> dict:
-    try:
-        # Validate required parameters
-        if not campaignId:
-            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
-
-        if not status: # Basic check, detailed validation in module
-            return {
-                "isError": True,
-                "content": [{"type": "text", "text": "Valid 'status' is required: start, pause, abort, end, or 1-4 numerically"}]
-            }
-
-        params = {
-            "campaignId": campaignId,
-            "status": status
-        }
-        if account:
-            params["accountName"] = account # Corrected from params["account"] to params["accountName"]
-
-        return update_voice_broadcast(params)
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
-
-
-@server.tool(name="deleteVoiceBroadcastCampaign", description="Delete a voice broadcast campaign by ID.")
-def delete_voice_broadcast_campaign_tool(
+@server.tool(name="getVbCampaign", description="Get a voice broadcast campaign by ID.")
+def get_vb_campaign_tool(
     account: Optional[str] = None,
     campaignId: str = None
 ) -> dict:
     try:
-        # Validate required parameters
         if not campaignId:
             return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
-
         params = {"campaignId": campaignId}
         if account:
-            params["accountName"] = account # Corrected from params["account"] to params["accountName"]
+            params["accountName"] = account
+        return get_vb_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-        return delete_voice_broadcast(params)
+
+@server.tool(name="createVbCampaign", description="Create a new voice broadcast campaign.")
+def create_vb_campaign_tool(
+    account: Optional[str] = None,
+    campaign_data: dict = None
+) -> dict:
+    try:
+        if not campaign_data:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaign_data' is required."}]}
+        params = {"campaign_data": campaign_data}
+        if account:
+            params["accountName"] = account
+        return create_vb_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="createVbCampaignTemplate", description="Create a new voice broadcast campaign template.")
+def create_vb_campaign_template_tool(
+    account: Optional[str] = None,
+    template_data: dict = None
+) -> dict:
+    try:
+        if not template_data:
+            return {"isError": True, "content": [{"type": "text", "text": "'template_data' is required."}]}
+        params = {"template_data": template_data}
+        if account:
+            params["accountName"] = account
+        return create_vb_campaign_template(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
