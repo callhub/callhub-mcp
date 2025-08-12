@@ -4,9 +4,8 @@
 import sys
 from pathlib import Path
 
-from callhub.logging import logger
-from callhub.voice_broadcasts import list_voice_broadcasts
-
+import logging
+logger = logging.getLogger("callhub")
 # Add server/lib to Python path
 server_dir = Path( __file__ ).parent
 lib_path = server_dir / "lib"
@@ -216,7 +215,7 @@ from callhub.csv_processor import (
     find_file,
     smart_file_process
 )
-
+from callhub.voice_broadcasts import list_voice_broadcasts
 from callhub.browser_automation import (
     export_agent_activation_urls_browser,
     activate_agents_with_password,
