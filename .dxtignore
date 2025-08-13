@@ -1,0 +1,9 @@
+*.pyc
+**/__pycache__/
+logs/
+README.md
+setup.py
+LICENSE
+.idea
+.venv/
+/src/lib
