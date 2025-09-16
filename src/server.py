@@ -192,7 +192,7 @@ from callhub.p2p_campaigns import (list_p2p_campaigns , update_p2p_campaign , de
                                    get_p2p_surveys , create_p2p_campaign)
 
 
-from src.callhub.sms_broadcasts import (
+from callhub.sms_broadcasts import (
     create_sms_broadcast,
     get_sms_broadcast,
     update_sms_broadcast
