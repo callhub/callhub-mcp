@@ -178,11 +178,8 @@ from callhub.numbers import (
     auto_rent_sms_number
 )
 
-from callhub.vb_campaigns import (
-    get_vb_campaign,
-    create_vb_campaign,
-    create_vb_campaign_template,
-)
+from callhub.vb_campaigns import (get_vb_campaign , create_vb_campaign_template ,
+                                  create_voice_broadcast_campaign ,list_voice_broadcasts )
 
 from callhub.sms_campaigns import (
     list_sms_campaigns,
@@ -194,15 +191,13 @@ from callhub.p2p_campaigns import (list_p2p_campaigns , update_p2p_campaign , de
                                    get_p2p_campaign_agents , add_agents_to_p2p_campaign , reassign_p2p_agents ,
                                    get_p2p_surveys , create_p2p_campaign)
 
-from callhub.sms_broadcasts import (
-    list_sms_broadcasts,
-    update_sms_broadcast,
-    delete_sms_broadcast
+
+from src.callhub.sms_broadcasts import (
+    create_sms_broadcast,
+    get_sms_broadcast,
+    update_sms_broadcast
 )
 
-from callhub.agent_activation import (
-    export_agent_activation_urls
-)
 
 from callhub.agent_activation_manual import (
     generate_export_url,
@@ -212,15 +207,10 @@ from callhub.agent_activation_manual import (
 from callhub.csv_processor import (
     process_uploaded_csv,
     process_agent_activation_csv_from_file,
-    find_file,
-    smart_file_process
 )
-from callhub.voice_broadcasts import list_voice_broadcasts
 from callhub.browser_automation import (
-    export_agent_activation_urls_browser,
     activate_agents_with_password,
     process_local_activation_csv,
-    parse_activation_csv
 )
 
 from callhub.phonebooks import (
@@ -263,7 +253,6 @@ from callhub.webhooks import (
 
 # Import our new batch activation tools
 from callhub.mcp_tools.batch_activation_tools import (
-    process_uploaded_activation_csv,
     prepare_agent_activation,
     activate_agents_with_batch_password,
     get_activation_status,
@@ -1372,7 +1361,7 @@ def create_vb_campaign_tool(
         params = {"campaign_data": campaign_data}
         if account:
             params["accountName"] = account
-        return create_vb_campaign(params)
+        return create_voice_broadcast_campaign(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -1659,24 +1648,114 @@ def get_p2p_surveys_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-# SMS Broadcast Management Tools
 
-@server.tool(name="listSmsBroadcasts", description="List all SMS broadcast campaigns with optional pagination.")
-def list_sms_broadcasts_tool(
+
+@server.tool(name="createSmsBroadcast", description="Create a new SMS broadcast campaign.")
+def create_sms_broadcast_tool(
     account: Optional[str] = None,
-    page: Optional[int] = None,
-    pageSize: Optional[int] = None
+    name: str = None,
+    text_message: str = None,
+    phonebook: list = None,
+    callerid: str = None,
+    callerid_choice: Optional[str] = "exists",
+    description: Optional[str] = None,
+    startingdate: Optional[str] = None,
+    expirationdate: Optional[str] = None,
+    daily_start_time: Optional[str] = None,
+    daily_stop_time: Optional[str] = None,
+    opt_out_language: Optional[str] = "",
+    help_compliance_message: Optional[str] = "",
+    monday: Optional[str] = None,
+    tuesday: Optional[str] = None,
+    wednesday: Optional[str] = None,
+    thursday: Optional[str] = None,
+    friday: Optional[str] = None,
+    saturday: Optional[str] = None,
+    sunday: Optional[str] = None,
+    timezone_choices: Optional[str] = None,
+    use_contact_tz: Optional[str] = "campaign_timezone",
+    intervalretry: Optional[int] = 5,
+    maxretry: Optional[int] = 0,
+    auto_replies: Optional[list] = None,
+    base_short_url: Optional[list] = None,
+    dont_text_dnc: Optional[bool] = False,
+    dont_text_litigator: Optional[bool] = True
 ) -> dict:
     try:
-        params = {}
-        if account:
-            params["accountName"] = account
-        if page is not None:
-            params["page"] = page
-        if pageSize is not None:
-            params["pageSize"] = pageSize
+        # Validate required parameters
+        if not name:
+            return {"isError": True, "content": [{"type": "text", "text": "'name' is required."}]}
+        if not text_message:
+            return {"isError": True, "content": [{"type": "text", "text": "'text_message' is required."}]}
+        if not phonebook:
+            return {"isError": True, "content": [{"type": "text", "text": "'phonebook' is required."}]}
+        if not callerid:
+            return {"isError": True, "content": [{"type": "text", "text": "'callerid' is required."}]}
 
-        return list_sms_broadcasts(params)
+        params = {
+            "name": name,
+            "text_message": text_message,
+            "phonebook": phonebook,
+            "callerid": callerid,
+            "callerid_choice": callerid_choice,
+            "opt_out_language": opt_out_language,
+            "help_compliance_message": help_compliance_message,
+            "use_contact_tz": use_contact_tz,
+            "intervalretry": intervalretry,
+            "maxretry": maxretry,
+            "dont_text_dnc": dont_text_dnc,
+            "dont_text_litigator": dont_text_litigator
+        }
+
+        # Add optional parameters if provided
+        if account:
+            params["account"] = account
+        if description:
+            params["description"] = description
+        if startingdate:
+            params["startingdate"] = startingdate
+        if expirationdate:
+            params["expirationdate"] = expirationdate
+        if daily_start_time:
+            params["daily_start_time"] = daily_start_time
+        if daily_stop_time:
+            params["daily_stop_time"] = daily_stop_time
+        if timezone_choices:
+            params["timezone_choices"] = timezone_choices
+        if auto_replies:
+            params["auto_replies"] = auto_replies
+        if base_short_url:
+            params["base_short_url"] = base_short_url
+
+        # Add weekday scheduling parameters
+        weekdays = {"monday": monday, "tuesday": tuesday, "wednesday": wednesday,
+                   "thursday": thursday, "friday": friday, "saturday": saturday, "sunday": sunday}
+        for day, value in weekdays.items():
+            if value:
+                params[day] = value
+
+        return create_sms_broadcast(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getSmsBroadcast", description="Get details of an SMS broadcast campaign.")
+def get_sms_broadcast_tool(
+    account: Optional[str] = None,
+    campaignId: str = None
+) -> dict:
+    try:
+        # Validate required parameters
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+        params = {
+            "campaignId": campaignId
+        }
+        if account:
+            params["account"] = account
+
+        return get_sms_broadcast(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -1710,7 +1789,7 @@ def update_sms_broadcast_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 @server.tool(name="createP2PCampaign", description="Create a new P2P campaign with a complex script structure.")
-def create_call_center_campaign_tool(
+def dsafdsf(
     account: Optional[str] = None,
     campaign_data: dict = None
 ) -> dict:
@@ -1724,24 +1803,6 @@ def create_call_center_campaign_tool(
             params["accountName"] = account
 
         return create_p2p_campaign(params)
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
-
-@server.tool(name="deleteSmsBroadcast", description="Delete an SMS broadcast campaign by ID.")
-def delete_sms_broadcast_tool(
-    account: Optional[str] = None,
-    campaignId: str = None
-) -> dict:
-    try:
-        # Validate required parameters
-        if not campaignId:
-            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
-
-        params = {"campaignId": campaignId}
-        if account:
-            params["accountName"] = account
-
-        return delete_sms_broadcast(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
