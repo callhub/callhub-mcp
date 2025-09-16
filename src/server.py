@@ -1358,7 +1358,7 @@ def create_vb_campaign_tool(
     try:
         if not campaign_data:
             return {"isError": True, "content": [{"type": "text", "text": "'campaign_data' is required."}]}
-        params = {"campaign_data": campaign_data}
+        params = campaign_data.copy()
         if account:
             params["accountName"] = account
         return create_voice_broadcast_campaign(params)

@@ -258,25 +258,18 @@ def api_call(method: str, url: str, headers: dict, data: Any = None, params: Dic
                     # Try to parse error as JSON and format it nicely
                     try:
                         error_json = resp.json()
-                        error_messages = []
-                        
-                        for field, messages in error_json.items():
-                            if isinstance(messages, list):
-                                for msg in messages:
-                                    error_messages.append(f"{field}: {msg}")
-                            else:
-                                error_messages.append(f"{field}: {messages}")
-                        
-                        if error_messages:
-                            # Instead of raising, store our parsed error and return it
-                            # This prevents retry attempts for client errors
-                            return {
-                                "isError": True,
-                                "content": [{"type": "text", "text": "; ".join(error_messages)}]
-                            }
+                        # The error can be a list or a dict, so just serialize it to a string.
+                        error_text = json.dumps(error_json)
+                        return {
+                            "isError": True,
+                            "content": [{"type": "text", "text": error_text}]
+                        }
                     except json.JSONDecodeError:
-                        # Not JSON, go ahead and raise the exception
-                        pass
+                        # Not JSON, just use the raw text
+                        return {
+                            "isError": True,
+                            "content": [{"type": "text", "text": resp.text}]
+                        }
                 except Exception as e:
                     logger.error(f"Error getting response body: {str(e)}")
                 
