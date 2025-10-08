@@ -18,9 +18,9 @@ def get_vb_campaign(params: dict):
     account_name = params.get( "accountName" )
     account , api_key , base_url = get_account_config( account_name )
 
-    url = build_url( base_url , "/v1/vb_campaigns/{}" , campaign_id )
+    url = build_url( base_url , "/v1/vb_campaign/{}" , campaign_id )
     headers = get_auth_headers( api_key )
-    return api_call('get', url, params=params,headers=headers)
+    return api_call('GET', url, params=params,headers=headers)
 
 def create_voice_broadcast_campaign(params: Dict[str, Any]) -> Dict:
     """
@@ -44,7 +44,7 @@ def create_voice_broadcast_campaign(params: Dict[str, Any]) -> Dict:
         account_name, api_key, base_url = get_account_config(account_name)
 
         # Build URL and headers
-        url = build_url(base_url, "v1/vb_campaigns/")
+        url = build_url(base_url, "v1/vb_campaign/")
         headers = get_auth_headers(api_key)
         headers["Content-Type"] = "application/json"
 
