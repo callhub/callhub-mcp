@@ -69,9 +69,6 @@ def voice_broadcast_example (account_name=None) :
 
     # Update voice broadcast status
     update_voice_broadcast_campaign({"account": account_name, "campaignId": "123", "status": "start"})
-
-    # Delete voice broadcast
-    delete_voice_broadcast_campaign({"account": account_name, "campaignId": "123"})
     """ )
 
 
@@ -89,7 +86,7 @@ def main () :
 
     print( "\n✅ Fixed: Now uses actual MCP functions instead of non-existent classes" )
     print( "✅ Added: create_sms_broadcast function for SMS campaigns" )
-    print( "ℹ️  Note: Voice broadcasts only support list/update/delete (no create function)" )
+    print( "ℹ️  Note: Voice broadcasts only support list/update/create" )
     print( "ℹ️  Parameter names: SMS/Voice use 'account' parameter" )
     print( "📁 Call center examples: See example_call_center_campaign.py" )
 

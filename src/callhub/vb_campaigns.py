@@ -140,3 +140,28 @@ def list_voice_broadcasts (params: Dict) -> Dict :
     except Exception as e :
         sys.stderr.write( f"[callhub] Error listing voice broadcast campaigns: {str( e )}\n" )
         return { "isError" : True , "content" : [ { "type" : "text" , "text" : str( e ) } ] }
+
+def duplicate_vb_campaign(params: Dict) -> Dict:
+    """
+    Duplicate a voice broadcast campaign.
+
+    Args:
+        params: Dictionary containing the following keys:
+            account (str, optional): The account name to use
+            campaignId (str): The ID of the campaign to duplicate
+
+    Returns:
+        dict: API response from the duplicate operation
+    """
+    campaign_id = params.get("campaignId")
+    if not campaign_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+    try:
+        account_name, api_key, base_url = get_account_config(params.get("account"))
+        url = build_url(base_url, f"v1/vb_campaign/{campaign_id}/duplicate/")
+        headers = get_auth_headers(api_key)
+        return api_call("POST", url, headers)
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error duplicating voice broadcast campaign: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

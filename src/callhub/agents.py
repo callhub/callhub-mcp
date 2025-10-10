@@ -167,31 +167,6 @@ def create_agent(params: Dict) -> Dict:
     
     return api_call("POST", url, headers, json_data=payload)
 
-def delete_agent(params: Dict) -> Dict:
-    """
-    Delete an agent by ID.
-    
-    Args:
-        params (dict): Dictionary containing:
-            - accountName (optional): The CallHub account name to use
-            - agentId (required): The ID of the agent to delete
-    
-    Returns:
-        Dict: Response from the API indicating success or failure
-    """
-    account_name = params.get("accountName")
-    agent_id = params.get("agentId")
-    
-    if not agent_id:
-        return {"isError": True, "content": [{"type": "text", "text": "'agentId' is required"}]}
-    
-    account, api_key, base_url = get_account_config(account_name)
-    
-    url = build_url(base_url, "/v1/agents/{}/", agent_id)
-    headers = get_auth_headers(api_key)
-    
-    return api_call("DELETE", url, headers)
-
 def get_live_agents(params: Dict) -> Dict:
     """
     Get a list of all agents currently connected to any campaign.

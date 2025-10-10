@@ -107,37 +107,6 @@ def update_call_center_campaign(params: Dict) -> Dict:
         sys.stderr.write(f"[callhub] Error updating call center campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def delete_call_center_campaign(params: Dict) -> Dict:
-    """
-    Delete a call center campaign by ID.
-    
-    Args:
-        params: Dictionary containing the following keys:
-            accountName (str, optional): The account name to use
-            campaignId (str): The ID of the campaign to delete
-    
-    Returns:
-        dict: API response from the delete operation
-    """
-    # Validate required parameters
-    campaign_id = params.get("campaignId")
-    if not campaign_id:
-        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
-    
-    try:
-        # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("accountName"))
-        
-        # Build URL and headers
-        url = build_url(base_url, "v1/callcenter_campaigns/{}/", campaign_id)
-        headers = get_auth_headers(api_key)
-        
-        # Make API call
-        return api_call("DELETE", url, headers)
-        
-    except Exception as e:
-        sys.stderr.write(f"[callhub] Error deleting call center campaign: {str(e)}\n")
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 def create_call_center_campaign(params: Dict) -> Dict:
     """
@@ -505,4 +474,35 @@ def get_media_files(params: Dict) -> Dict:
 
     except Exception as e:
         sys.stderr.write(f"[callhub] Error getting media files: {str(e)}")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+def add_agents_to_power_campaign(params: Dict) -> Dict:
+    """
+    Add agents to a power campaign.
+
+    Args:
+        params: Dictionary containing the following keys:
+            accountName (str, optional): The account name to use.
+            campaignId (str): The ID of the campaign to add agents to.
+            agentIds (list): List of agent IDs to add.
+
+    Returns:
+        dict: API response from the add operation.
+    """
+    campaign_id = params.get("campaignId")
+    if not campaign_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+    agent_ids = params.get("agentIds")
+    if not agent_ids:
+        return {"isError": True, "content": [{"type": "text", "text": "'agentIds' is required."}]}
+
+    try:
+        account_name, api_key, base_url = get_account_config(params.get("accountName"))
+        url = build_url(base_url, f"v1/power_campaign/{campaign_id}/agents/add/")
+        headers = get_auth_headers(api_key, "application/json")
+        data = {"agents": agent_ids}
+        return api_call("POST", url, headers, json_data=data)
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error adding agents to power campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

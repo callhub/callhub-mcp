@@ -214,7 +214,7 @@ def add_agents_to_p2p_campaign(params: Dict) -> Dict:
         url = build_url(base_url, "v2/collective_texting/{}/agents/add/", campaign_id)
         headers = get_auth_headers(api_key, "application/json")
         
-        data = {"agents_data": {len(agent_ids): agent_ids}}
+        data = {"agents": agent_ids}
         
         return api_call("POST", url, headers, json_data=data)
         
@@ -429,4 +429,29 @@ def get_p2p_surveys(params: Dict) -> Dict:
         
     except Exception as e:
         sys.stderr.write(f"[callhub] Error getting P2P surveys: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+def duplicate_p2p_campaign(params: Dict) -> Dict:
+    """
+    Duplicate a P2P campaign.
+
+    Args:
+        params: Dictionary containing the following keys:
+            account (str, optional): The account name to use
+            campaignId (str): The ID of the campaign to duplicate
+
+    Returns:
+        dict: API response from the duplicate operation
+    """
+    campaign_id = params.get("campaignId")
+    if not campaign_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+    try:
+        account_name, api_key, base_url = get_account_config(params.get("account"))
+        url = build_url(base_url, "v1/p2p_campaigns/{}/duplicate/", campaign_id)
+        headers = get_auth_headers(api_key)
+        return api_call("POST", url, headers)
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error duplicating P2P campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

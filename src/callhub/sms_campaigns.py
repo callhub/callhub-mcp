@@ -107,34 +107,3 @@ def update_sms_campaign(params: Dict) -> Dict:
         sys.stderr.write(f"[callhub] Error updating SMS campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def delete_sms_campaign(params: Dict) -> Dict:
-    """
-    Delete an SMS campaign by ID.
-    
-    Args:
-        params: Dictionary containing the following keys:
-            account (str, optional): The account name to use
-            campaignId (str): The ID of the campaign to delete
-    
-    Returns:
-        dict: API response from the delete operation
-    """
-    # Validate required parameters
-    campaign_id = params.get("campaignId")
-    if not campaign_id:
-        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
-    
-    try:
-        # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("account"))
-        
-        # Build URL and headers
-        url = build_url(base_url, "v1/sms_campaigns/{}/", campaign_id)
-        headers = get_auth_headers(api_key)
-        
-        # Make API call
-        return api_call("DELETE", url, headers)
-        
-    except Exception as e:
-        sys.stderr.write(f"[callhub] Error deleting SMS campaign: {str(e)}\n")
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

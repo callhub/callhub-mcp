@@ -117,7 +117,6 @@ from callhub.agents import (
     list_agents,
     get_agent,
     create_agent,
-    delete_agent,
     get_live_agents
 )
 
@@ -160,9 +159,9 @@ from callhub.dnc import (
     delete_dnc_list
 )
 
-from callhub.campaigns import (list_call_center_campaigns , update_call_center_campaign , delete_call_center_campaign ,
+from callhub.campaigns import (list_call_center_campaigns , update_call_center_campaign ,
                                create_call_center_campaign , exportCampaignData  ,
-                               getCampaignStatsAdvanced , get_media_files , duplicate_power_campaign  )
+                               getCampaignStatsAdvanced , get_media_files   )
 
 from callhub.numbers import (
     list_rented_numbers,
@@ -183,11 +182,10 @@ from callhub.vb_campaigns import (get_vb_campaign , create_vb_campaign_template 
 
 from callhub.sms_campaigns import (
     list_sms_campaigns,
-    update_sms_campaign,
-    delete_sms_campaign
+    update_sms_campaign
 )
 
-from callhub.p2p_campaigns import (list_p2p_campaigns , update_p2p_campaign , delete_p2p_campaign ,
+from callhub.p2p_campaigns import (list_p2p_campaigns , update_p2p_campaign ,
                                    get_p2p_campaign_agents , add_agents_to_p2p_campaign , reassign_p2p_agents ,
                                    get_p2p_surveys , create_p2p_campaign)
 
@@ -288,6 +286,16 @@ from callhub.api_utils import (
 )
 
 from callhub.utils import parse_input_fields
+from callhub.relational_organizing import (
+    create_relational_organizing_campaign,
+    duplicate_relational_organizing_campaign,
+    assign_agents_to_relational_organizing_campaign,
+)
+from callhub.sms_broadcasts import duplicate_sms_broadcast
+from callhub.p2p_campaigns import duplicate_p2p_campaign
+from callhub.campaigns import add_agents_to_power_campaign, duplicate_power_campaign
+from callhub.vb_campaigns import duplicate_vb_campaign
+
 
 # Load .env (for CALLHUB_ACCOUNT, etc.)
 load_dotenv()
@@ -417,17 +425,6 @@ def create_agent_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="deleteAgent", description="Delete an agent by ID.")
-def delete_agent_tool(account: Optional[str] = None, agentId: Optional[str] = None) -> dict:
-    try:
-        params = {}
-        if account:
-            params["accountName"] = account
-        if agentId:
-            params["agentId"] = agentId
-        return delete_agent(params)
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
 @server.tool(name="getLiveAgents", description="Get a list of all agents currently connected to any campaign.")
@@ -1155,23 +1152,6 @@ def update_call_center_campaign_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="deleteCallCenterCampaign", description="Delete a call center campaign by ID.")
-def delete_call_center_campaign_tool(
-    account: Optional[str] = None,
-    campaignId: str = None
-) -> dict:
-    try:
-        # Validate required parameters
-        if not campaignId:
-            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
-
-        params = {"campaignId": campaignId}
-        if account:
-            params["accountName"] = account
-
-        return delete_call_center_campaign(params)
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
 @server.tool(name="createCallCenterCampaign", description="Create a new call center campaign with a complex script structure.")
@@ -1483,24 +1463,6 @@ def update_sms_campaign_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="deleteSmsCampaign", description="Delete an SMS campaign by ID.")
-def delete_sms_campaign_tool(
-    account: Optional[str] = None,
-    campaignId: str = None
-) -> dict:
-    try:
-        # Validate required parameters
-        if not campaignId:
-            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
-
-        params = {"campaignId": campaignId}
-        if account:
-            params["accountName"] = account # Corrected from params["account"] to params["accountName"]
-
-        return delete_sms_campaign(params)
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
-
 
 # P2P Campaign Management Tools
 
@@ -1553,23 +1515,6 @@ def update_p2p_campaign_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="deleteP2pCampaign", description="Delete a P2P campaign by ID.")
-def delete_p2p_campaign_tool(
-    account: Optional[str] = None,
-    campaignId: str = None
-) -> dict:
-    try:
-        # Validate required parameters
-        if not campaignId:
-            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
-
-        params = {"campaignId": campaignId}
-        if account:
-            params["account"] = account
-
-        return delete_p2p_campaign(params)
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
 
@@ -2066,6 +2011,123 @@ def list_dnc_lists_tool(
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
+
+@server.tool(name="createRelationalCampaign", description="Create a new relational organizing campaign.")
+def create_relational_campaign_tool(
+    account: Optional[str] = None,
+    name: str = None,
+    brief: str = None,
+    phonebook_ids: list = None,
+    user_tag_ids: list = None,
+    default_outreach_medium: int = None,
+    agent_assignment_choice: int = None,
+    team_ids: list = None,
+    starting_date: str = None,
+    end_date: str = None,
+    timezone: str = None,
+    survey_id: int = None,
+) -> dict:
+    try:
+        params = {
+            "name": name,
+            "brief": brief,
+            "phonebook_ids": phonebook_ids,
+            "user_tag_ids": user_tag_ids,
+            "default_outreach_medium": default_outreach_medium,
+            "agent_assignment_choice": agent_assignment_choice,
+            "team_ids": team_ids,
+            "starting_date": starting_date,
+            "end_date": end_date,
+            "timezone": timezone,
+            "survey_id": survey_id,
+        }
+        if account:
+            params["accountName"] = account
+        return create_relational_organizing_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="duplicateRelationalCampaign", description="Duplicate a relational organizing campaign.")
+def duplicate_relational_campaign_tool(
+    account: Optional[str] = None, campaign_id: int = None
+) -> dict:
+    try:
+        params = {"campaign_id": campaign_id}
+        if account:
+            params["accountName"] = account
+        return duplicate_relational_organizing_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(
+    name="assignAgentsToRelationalCampaign",
+    description="Assign or remove agents to/from a relational organizing campaign.",
+)
+def assign_agents_to_relational_campaign_tool(
+    account: Optional[str] = None, campaign_id: int = None, agent_ids_to_assign: list = None, agent_ids_to_remove: list = None
+) -> dict:
+    try:
+        params = {"campaign_id": campaign_id, "agent_ids_to_assign": agent_ids_to_assign, "agent_ids_to_remove": agent_ids_to_remove}
+        if account:
+            params["accountName"] = account
+        return assign_agents_to_relational_organizing_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+
+@server.tool(name="duplicateSmsBroadcast", description="Duplicate an SMS broadcast campaign.")
+def duplicate_sms_broadcast_tool(
+    account: Optional[str] = None, campaign_id: int = None
+) -> dict:
+    try:
+        params = {"campaignId": campaign_id}
+        if account:
+            params["accountName"] = account
+        return duplicate_sms_broadcast(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="duplicateP2pCampaign", description="Duplicate a P2P campaign.")
+def duplicate_p2p_campaign_tool(
+    account: Optional[str] = None, campaign_id: int = None
+) -> dict:
+    try:
+        params = {"campaignId": campaign_id}
+        if account:
+            params["accountName"] = account
+        return duplicate_p2p_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="addAgentsToPowerCampaign", description="Add agents to a power campaign.")
+def add_agents_to_power_campaign_tool(
+    account: Optional[str] = None, campaign_id: int = None, agent_ids: list = None
+) -> dict:
+    try:
+        params = {"campaignId": campaign_id, "agentIds": agent_ids}
+        if account:
+            params["accountName"] = account
+        return add_agents_to_power_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="duplicateVbCampaign", description="Duplicate a voice broadcast campaign.")
+def duplicate_vb_campaign_tool(
+    account: Optional[str] = None, campaign_id: int = None
+) -> dict:
+    try:
+        params = {"campaignId": campaign_id}
+        if account:
+            params["accountName"] = account
+        return duplicate_vb_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 @server.tool(name="updateDncList", description="Update an existing DNC list by ID.")
 def update_dnc_list_tool(

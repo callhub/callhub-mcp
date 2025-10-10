@@ -205,3 +205,28 @@ def update_sms_broadcast(params: Dict) -> Dict:
     except Exception as e:
         sys.stderr.write(f"[callhub] Error updating SMS broadcast campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+def duplicate_sms_broadcast(params: Dict) -> Dict:
+    """
+    Duplicate an SMS broadcast campaign.
+
+    Args:
+        params: Dictionary containing the following keys:
+            account (str, optional): The account name to use
+            campaignId (str): The ID of the campaign to duplicate
+
+    Returns:
+        dict: API response from the duplicate operation
+    """
+    campaign_id = params.get("campaignId")
+    if not campaign_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+    try:
+        account_name, api_key, base_url = get_account_config(params.get("account"))
+        url = build_url(base_url, "v2/sms_broadcast/{}/duplicate/", campaign_id)
+        headers = get_auth_headers(api_key)
+        return api_call("POST", url, headers)
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error duplicating SMS broadcast campaign: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
