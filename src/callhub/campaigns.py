@@ -506,3 +506,9 @@ def add_agents_to_power_campaign(params: Dict) -> Dict:
     except Exception as e:
         sys.stderr.write(f"[callhub] Error adding agents to power campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+def export_power_campaign(client: CallHubClient, campaign_id: int):
+    """
+    Export a power campaign.
+    """
+    return client.get(f"v1/power_campaign/{campaign_id}/export/")

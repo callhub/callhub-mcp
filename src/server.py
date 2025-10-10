@@ -290,11 +290,15 @@ from callhub.relational_organizing import (
     create_relational_organizing_campaign,
     duplicate_relational_organizing_campaign,
     assign_agents_to_relational_organizing_campaign,
+    update_relational_organizing_campaign,
+    get_relational_organizing_campaign,
+    update_relational_organizing_campaign_status,
 )
 from callhub.sms_broadcasts import duplicate_sms_broadcast
 from callhub.p2p_campaigns import duplicate_p2p_campaign
-from callhub.campaigns import add_agents_to_power_campaign, duplicate_power_campaign
+from callhub.campaigns import add_agents_to_power_campaign, duplicate_power_campaign, export_power_campaign
 from callhub.vb_campaigns import duplicate_vb_campaign
+from callhub.sms_campaigns import export_sms_report
 
 
 # Load .env (for CALLHUB_ACCOUNT, etc.)
@@ -2129,7 +2133,141 @@ def duplicate_vb_campaign_tool(
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-@server.tool(name="updateDncList", description="Update an existing DNC list by ID.")
+
+@server.tool(name="updateRelationalCampaign", description="Update a relational organizing campaign.")
+def update_relational_campaign_tool(
+    account: Optional[str] = None,
+    campaign_id: int = None,
+    name: str = None,
+    brief: str = None,
+    phonebook_ids: list = None,
+    user_tag_ids: list = None,
+    default_outreach_medium: int = None,
+    agent_assignment_choice: int = None,
+    team_ids: list = None,
+    starting_date: str = None,
+    end_date: str = None,
+    timezone: str = None,
+    survey_id: int = None,
+) -> dict:
+    try:
+        params = {
+            "campaign_id": campaign_id,
+            "name": name,
+            "brief": brief,
+            "phonebook_ids": phonebook_ids,
+            "user_tag_ids": user_tag_ids,
+            "default_outreach_medium": default_outreach_medium,
+            "agent_assignment_choice": agent_assignment_choice,
+            "team_ids": team_ids,
+            "starting_date": starting_date,
+            "end_date": end_date,
+            "timezone": timezone,
+            "survey_id": survey_id,
+        }
+        if account:
+            params["accountName"] = account
+        return update_relational_organizing_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getRelationalCampaign", description="Get a relational organizing campaign.")
+def get_relational_campaign_tool(
+    account: Optional[str] = None, campaign_id: int = None
+) -> dict:
+    try:
+        params = {"campaign_id": campaign_id}
+        if account:
+            params["accountName"] = account
+        return get_relational_organizing_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="updateRelationalCampaignStatus", description="Update the status of a relational organizing campaign.")
+def update_relational_campaign_status_tool(
+    account: Optional[str] = None, campaign_id: int = None, status: str = None
+) -> dict:
+    try:
+        params = {"campaign_id": campaign_id, "status": status}
+        if account:
+            params["accountName"] = account
+        return update_relational_organizing_campaign_status(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="exportSmsReport", description="Export an SMS report for a campaign.")
+
+
+def export_sms_report_tool(
+
+
+    account: Optional[str] = None, campaign_id: int = None
+
+
+) -> dict:
+
+
+    try:
+
+
+        params = {"campaign_id": campaign_id}
+
+
+        if account:
+
+
+            params["accountName"] = account
+
+
+        return export_sms_report(params)
+
+
+    except Exception as e:
+
+
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+
+
+
+
+
+
+@server.tool(name="exportPowerCampaign", description="Export a power campaign.")
+
+
+def export_power_campaign_tool(
+
+
+    account: Optional[str] = None, campaign_id: int = None
+
+
+) -> dict:
+
+
+    try:
+
+
+        params = {"campaignId": campaign_id}
+
+
+        if account:
+
+
+            params["accountName"] = account
+
+
+        return export_power_campaign(params)
+
+
+    except Exception as e:
+
+
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}@server.tool(name="updateDncList", description="Update an existing DNC list by ID.")
 def update_dnc_list_tool(
     account: Optional[str] = None,
     listId: str = None, # DNC List ID

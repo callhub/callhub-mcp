@@ -107,3 +107,9 @@ def update_sms_campaign(params: Dict) -> Dict:
         sys.stderr.write(f"[callhub] Error updating SMS campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
+def export_sms_report(client: CallHubClient, campaign_id: int):
+    """
+    Export an SMS report for a campaign.
+    """
+    return client.get(f"v1/sms_campaign/sms_report/export/?campaign_id={campaign_id}")
+
