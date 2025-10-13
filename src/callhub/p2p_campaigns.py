@@ -234,7 +234,7 @@ def create_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     if not template_id and not script:
         return {
             "isError": True,
-            "content": [{"type": "text", "text": "Either 'template_id' or 'script' must be provided."}]
+            "content": [{"type": "text", "text": "Either 'template_id' or 'script' must be provided. Recommended: use template_id (integer)."}]
         }
 
     # Build minimal payload (LESSON: Start with minimal fields, let API set defaults)
@@ -257,6 +257,7 @@ def create_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     
     try:
         client = McpApiClient(params.get("account"))
+        # Log the payload being sent for debugging
         sys.stderr.write(f"[callhub] Template ID: {template_id}\n")
         sys.stderr.write(f"[callhub] Payload: {json.dumps(payload, indent=2)}\n")
         response = client.call("/v1/p2p_campaigns/", "POST", body=payload)
@@ -279,9 +280,21 @@ def create_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
         
         # Provide helpful error messages based on common issues discovered during testing
         if "SSL" in error_msg.upper():
-            return {"isError": True, "content": [{"type": "text", "text": f"SSL Error: {error_msg}. For local development with 0.0.0.0, use HTTP base URL instead of HTTPS."}]}
+            return {
+                "isError": True,
+                "content": [{
+                    "type": "text",
+                    "text": f"SSL Error: {error_msg}. For local development with 0.0.0.0, use HTTP base URL instead of HTTPS."
+                }]
+            }
         elif "Connection" in error_msg:
-            return {"isError": True, "content": [{"type": "text", "text": f"Connection Error: {error_msg}. Check if the base URL is accessible."}]}
+            return {
+                "isError": True,
+                "content": [{
+                    "type": "text",
+                    "text": f"Connection Error: {error_msg}. Check if the base URL is accessible."
+                }]
+            }
         else:
             return {"isError": True, "content": [{"type": "text", "text": error_msg}]}
 
