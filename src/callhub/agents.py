@@ -16,7 +16,7 @@ def list_agents(params: Dict[str, Any]) -> Dict[str, Any]:
             - accountName (optional): The CallHub account name to use
             - include_pending (optional): Include pending agents (default: False)
             - page (optional): Page number for pagination
-    
+
     Returns:
         Dict: Response from the API with agent list
     """
@@ -28,6 +28,8 @@ def list_agents(params: Dict[str, Any]) -> Dict[str, Any]:
     
     page = params.get("page")
     if page:
+        # Debug log for pagination
+        sys.stderr.write(f"[callhub] list_agents called with page parameter: {page}\n")
         query_params["page"] = page
         
     return client.call("/v1/agents/", "GET", query=query_params)

@@ -69,6 +69,7 @@ def load_all_credentials() -> dict:
     pattern = r"^CALLHUB_(.+)_API_KEY$"
     
     # First pass to find all accounts
+    account = None
     for key in os.environ:
         match = re.match(pattern, key)
         if match:
@@ -80,7 +81,7 @@ def load_all_credentials() -> dict:
                 creds[account] = {
                     "username": os.environ.get(username_key, ""),
                     "api_key": os.environ[key],
-                    "base_url": os.environ.get(base_url_key, "https://api-na1.callhub.io")
+                    "base_url": os.environ.get(base_url_key, "https://api.callhub.io")
                 }
     
     # Check for the legacy format (no account prefix)
@@ -89,12 +90,13 @@ def load_all_credentials() -> dict:
         creds["default"] = {
             "username": os.environ.get("CALLHUB_USERNAME", ""),
             "api_key": default_api_key,
-            "base_url": os.environ.get("CALLHUB_BASE_URL", "https://api-na1.callhub.io")
+            "base_url": os.environ.get("CALLHUB_BASE_URL", "https://api.callhub.io")
         }
-    
     if not creds:
         logger.warning(f"No CallHub credentials found in .env file at {env_path}")
         logger.info("Use the setup wizard or configureAccount tool to set up your credentials")
+    elif "default" not in creds:
+        creds["default"] = creds[account]  # Use the last account as default if not set
         
     return creds
 
@@ -119,7 +121,7 @@ def save_credentials(creds: dict) -> None:
         # Add or update API key
         set_key(env_path, f"CALLHUB_{account_upper}_API_KEY", config.get("api_key", ""))
         # Add or update base URL
-        set_key(env_path, f"CALLHUB_{account_upper}_BASE_URL", config.get("base_url", "https://api-na1.callhub.io"))
+        set_key(env_path, f"CALLHUB_{account_upper}_BASE_URL", config.get("base_url", "https://api.callhub.io"))
     
     logger.info(f"Wrote credentials to: {env_path}")
 
