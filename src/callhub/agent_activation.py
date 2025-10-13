@@ -247,7 +247,7 @@ def download_activation_csv(account_name: Optional[str] = None, download_url: st
 
     # Make the request to download the CSV
     response = api_call("GET", url, headers)
-    sys.stderr.write( f"[callhub] CSV download response status: {response.status_code}\n" )
+    sys.stderr.write( f"[callhub] CSV download response: {response}\n" )
     if response.get("isError"):
         return response
 
