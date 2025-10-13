@@ -130,7 +130,7 @@ def start_activation_export(account_name: Optional[str] = None) -> Dict:
     sys.stderr.write( f"[callhub] Activation export response: {response}\n" )
 
     if response.get("isError"):
-        return
+        return response
 
     # Try to extract the job ID from the response HTML
     text = response.get("message", "")
