@@ -279,9 +279,9 @@ def create_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
         
         # Provide helpful error messages based on common issues discovered during testing
         if "SSL" in error_msg.upper():
-            return {"isError": True, "content": [{"type": "text", "text": f"SSL Error: {error_msg}."}]}
+            return {"isError": True, "content": [{"type": "text", "text": f"SSL Error: {error_msg}. For local development with 0.0.0.0, use HTTP base URL instead of HTTPS."}]}
         elif "Connection" in error_msg:
-            return {"isError": True, "content": [{"type": "text", "text": f"Connection Error: {error_msg}."}]}
+            return {"isError": True, "content": [{"type": "text", "text": f"Connection Error: {error_msg}. Check if the base URL is accessible."}]}
         else:
             return {"isError": True, "content": [{"type": "text", "text": error_msg}]}
 

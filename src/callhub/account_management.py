@@ -71,7 +71,12 @@ def add_account(account_name: str, username: str, api_key: str, base_url: str) -
             "message": f"Account '{account_name}' verified and added successfully.",
             "account": account_name
         }
-
+    except requests.exceptions.RequestException as e:
+        return {
+            "success": False,
+            "message": f"A network error occurred while trying to verify the account: {e}. Please check the base URL and your connection.",
+            "error": str(e)
+        }
     except Exception as e:
         return {
             "success": False,

@@ -260,6 +260,28 @@ def create_contacts_bulk(params: dict) -> dict:
         return resp.json()
     
     except requests.exceptions.RequestException as e:
+        # Special handling for rate limit errors
+        if hasattr(e, 'response') and e.response and e.response.status_code == 429:
+            # Extract retry time if available
+            retry_after = None
+            if e.response.headers:
+                retry_after = e.response.headers.get('retry-after') or e.response.headers.get('Retry-After')
+
+            retry_msg = ""
+            if retry_after:
+                retry_msg = f" Please try again in {retry_after} seconds."
+
+            return {
+                "isError": True,
+                "content": [{
+                    "type": "text",
+                    "text": f"The bulk create contacts API is currently rate limited. It can only be called once per minute.{retry_msg}"
+                }],
+                "isRateLimited": True,
+                "retryAfter": retry_after if retry_after else 60
+            }
+
+        # For all other request exceptions
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 def update_contact(params: Dict[str, Any]) -> Dict[str, Any]:
