@@ -106,6 +106,7 @@ def create_custom_field(params: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Dictionary with created custom field details
     """
+    # Ensure required fields are provided
     if "name" not in params:
         return {"isError": True, "content": [{"type": "text", "text": "'name' field is required."}]}
     if "field_type" not in params:
@@ -114,15 +115,27 @@ def create_custom_field(params: Dict[str, Any]) -> Dict[str, Any]:
     client = McpApiClient(params.get("accountName"))
     request_data = {"name": params["name"], "field_type": params["field_type"]}
     
+    # Add choice array for Multi-choice type fields
     if params["field_type"] == "Multi-choice" and "choices" in params:
         request_data["choice"] = params["choices"]
 
+    # Debug output to help troubleshoot
     sys.stderr.write(f"[callhub] Creating custom field with params: {request_data}\n")
     return client.call("/v1/custom_fields/", "POST", body=request_data)
 
 def update_custom_field(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Update an existing custom field by ID.
+    
+    Args:
+        params: Dictionary with:
+            - accountName (optional): The account to use
+            - customFieldId: ID of the custom field to update
+            - name (optional): New name for the custom field
+            - options (optional): For "select" type, a list of options
+            
+    Returns:
+        Dictionary with updated custom field details
     """
     field_id = params.get("customFieldId")
     if not field_id:
@@ -135,12 +148,21 @@ def update_custom_field(params: Dict[str, Any]) -> Dict[str, Any]:
     if "options" in params:
         update_data["options"] = params["options"]
 
+    # Debug output to help troubleshoot
     sys.stderr.write(f"[callhub] Updating custom field {field_id} with params: {update_data}\n")
     return client.call(f"/v1/custom_fields/{field_id}/", "PUT", body=update_data)
 
 def delete_custom_field(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Delete a custom field by ID.
+    
+    Args:
+        params: Dictionary with:
+            - accountName (optional): The account to use
+            - customFieldId: ID of the custom field to delete
+            
+    Returns:
+        Dictionary with deletion status
     """
     field_id = params.get("customFieldId")
     if not field_id:
