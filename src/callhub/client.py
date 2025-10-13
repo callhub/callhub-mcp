@@ -34,8 +34,8 @@ class McpApiClient :
             method: HTTP method (GET, POST, PATCH, DELETE)
             body: JSON body for POST/PATCH requests
             query: Query parameters for GET requests
-            raw_data: Raw data for POST requests (used instead of body if provided)
-            params: Parameters containing IDs and other values
+            form_data: Form data for POST requests (used instead of body if provided)
+            url_params: Positional arguments to be formatted into the URL
 
         Returns:
             API response dictionary
