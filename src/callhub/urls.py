@@ -1,37 +1,29 @@
 """Shortened URL management functions for CallHub API."""
-import sys
-from typing import Dict, Optional
+from typing import Dict, Any
 
-from .auth import get_account_config
-from .utils import build_url, api_call, get_auth_headers
+from .client import McpApiClient
 
 
-
-def getShortenedUrl(params: dict) -> dict:
+def get_shortened_url(params: Dict[str, Any]) -> Dict[str, Any]:
     """Get details of a shortened URL by its short code.
-    
+
     Args:
         params: Dictionary with:
             - accountName (optional): The account to use
             - shortCode: The short code of the URL to retrieve
-        
+
     Returns:
         Dictionary with shortened URL details
     """
-    account_name = params.get("accountName")
-    _, api_key, base_url = get_account_config(account_name)
-    
     short_code = params.get("shortCode")
     if not short_code:
-        raise ValueError("'shortCode' is required.")
-    
-    headers = get_auth_headers(api_key)
-    api_url = build_url(base_url, "v2/shortened-urls/{}/", short_code)
+        return {"isError": True, "content": [{"type": "text", "text": "'shortCode' is required."}]}
 
-    return api_call("GET", api_url, headers)
+    client = McpApiClient(params.get("accountName"))
+    return client.call(f"v2/shortened-urls/{short_code}/", "GET")
 
 
-def listShortenedUrls(params: dict) -> dict:
+def list_shortened_urls(params: Dict[str, Any]) -> Dict[str, Any]:
     """List all shortened URLs with optional pagination.
     
     Args:
@@ -39,19 +31,15 @@ def listShortenedUrls(params: dict) -> dict:
             - accountName (optional): The account to use
             - page (optional): Page number for pagination
             - pageSize (optional): Number of items per page
-        
+
     Returns:
         Dictionary with list of shortened URLs
     """
-    account_name = params.get("accountName")
-    _, api_key, base_url = get_account_config(account_name)
-    
-    headers = get_auth_headers(api_key)
+    client = McpApiClient(params.get("accountName"))
     query = {}
     if params.get("page"):
         query["page"] = params["page"]
     if params.get("pageSize"):
         query["page_size"] = params["pageSize"]
     
-    api_url = build_url(base_url, "v2/shortened-urls/")
-    return api_call("GET", api_url, headers, params=query)
+    return client.call("v2/shortened-urls/", "GET", query=query)

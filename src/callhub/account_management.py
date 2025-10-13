@@ -8,7 +8,7 @@ import sys
 import requests
 from dotenv import load_dotenv, set_key, find_dotenv
 from .auth import _env_path, load_all_credentials, save_credentials
-from .utils import build_url, get_auth_headers
+from .utils import build_url, get_auth_headers, api_call
 
 def add_account(account_name: str, username: str, api_key: str, base_url: str) -> dict:
     """
@@ -29,13 +29,13 @@ def add_account(account_name: str, username: str, api_key: str, base_url: str) -
         verification_url = build_url(base_url, "/v1/users/")
         headers = get_auth_headers(api_key)
         
-        response = requests.get(verification_url, headers=headers, timeout=10)
+        response = api_call("GET", verification_url, headers)
         
-        if response.status_code != 200:
+        if response.get("isError"):
             return {
                 "success": False,
-                "message": f"Failed to verify credentials for account '{account_name}'. The API call failed with status {response.status_code}. Please check the API key and base URL.",
-                "error": response.text
+                "message": f"Failed to verify credentials for account '{account_name}'. Please check the API key and base URL.",
+                "error": response.get("content")
             }
         # --- End Verification Step ---
 
@@ -71,12 +71,7 @@ def add_account(account_name: str, username: str, api_key: str, base_url: str) -
             "message": f"Account '{account_name}' verified and added successfully.",
             "account": account_name
         }
-    except requests.exceptions.RequestException as e:
-        return {
-            "success": False,
-            "message": f"A network error occurred while trying to verify the account: {e}. Please check the base URL and your connection.",
-            "error": str(e)
-        }
+
     except Exception as e:
         return {
             "success": False,

@@ -2,60 +2,15 @@
 """
 P2P (Peer-to-Peer) Campaign operations for CallHub API.
 P2P = Snowflake = Collective Texting in CallHub
-
-FIXES APPLIED - July 2025 VB System Integration Testing:
-
-1. SCRIPT STRUCTURE FIX:
-   - Use template_id (integer) or script object
-   - Optionally convert script objects to template_id from v1/templates
-   - ✅ CORRECT "script": {"label": "...", "questions": [...]}
-   - ✅ CORRECT: "template_id": 123
-
-2. SSL CERTIFICATE HANDLING:
-   - Local development (0.0.0.0): Use HTTP, disable SSL verification
-   - Production: Use HTTPS with proper SSL certificates
-   - Added automatic SSL detection based on URL
-
-3. MINIMAL REQUIRED FIELDS:
-   - name: Campaign name (required)
-   - template_id: Survey template ID (required) 
-   - phonebooks: List of phonebook IDs (required)
-   - callerid_options: Caller ID configuration (required)
-   - All other fields are optional - let API set defaults
-
-4. ERROR HANDLING:
-   - Specific handling for date format errors
-   - SSL certificate error guidance
-   - Authentication failure messages
-   - Validation error parsing
-
-5. DATE FORMAT REQUIREMENTS:
-   - ✅ CORRECT: "2025-07-11 15:55:40+00:00"
-   - ❌ WRONG: "2025-07-12 09:55:40+00:00" (some timezones cause issues)
-   - RECOMMENDATION: Let API set default schedule for simplicity
-
-WORKING EXAMPLE:
-    campaign_data = {
-        "name": "VB System P2P Campaign",
-        "template_id": 3674114171558954642,  # INTEGER
-        "phonebooks": ["1"],
-        "callerid_options": {"numbers": ["12232017834"]}
-    }
-
-INTEGRATION NOTES:
-- Use with VB modules: dialer_campaign, dialer_contact, survey, workflow
-- Store campaign IDs in dialer_cdr for tracking
-- Handle success/failure callbacks in workflow module
 """
 
 import sys
-from typing import Dict, List, Union, Optional, Any
-import json # Added import for json
+from typing import Dict, Any, List
+import json
 
-from .utils import build_url, api_call, get_auth_headers
-from .auth import get_account_config
+from .client import McpApiClient
 
-def list_p2p_campaigns(params: Dict) -> Dict:
+def list_p2p_campaigns(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     List all P2P campaigns (Snowflake campaigns) with optional pagination.
     
@@ -69,28 +24,18 @@ def list_p2p_campaigns(params: Dict) -> Dict:
         dict: API response containing campaign data or error information
     """
     try:
-        # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("account")) # Reverted to original signature
-        
-        # Build URL using Snowflake endpoint
-        url = build_url(base_url, "v1/p2p_campaigns/")
-        headers = get_auth_headers(api_key) # Reverted to original signature
-        
-        # Prepare query parameters
+        client = McpApiClient(params.get("account"))
         query_params = {}
         if params.get("page") is not None:
             query_params["page"] = params["page"]
         if params.get("pageSize") is not None:
             query_params["page_size"] = params["pageSize"]
-        
-        # Make API call
-        return api_call("GET", url, headers, params=query_params)
-        
+        return client.call("/v1/p2p_campaigns/", "GET", query=query_params)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error listing P2P campaigns: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def update_p2p_campaign(params: Dict) -> Dict:
+def update_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Update a P2P campaign's status using Snowflake endpoint.
     
@@ -109,27 +54,19 @@ def update_p2p_campaign(params: Dict) -> Dict:
     campaign_id = params.get("campaignId")
     if not campaign_id:
         return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
-
-    # Map string status to numeric status if needed
+    
+    status = params.get("status")
+    if not status:
+        return {"isError": True, "content": [{"type": "text", "text": "'status' is required."}]}
 
     try:
-        # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("account")) # Reverted to original signature
-        
-        # Build URL using Snowflake endpoint
-        url = build_url(base_url, "v2/sms_campaign/snowflake/{}/", campaign_id)
-        headers = get_auth_headers(api_key, "application/json") # Reverted to original signature
-        
-        # Prepare data
-        
-        # Make API call
-        return api_call("PUT", url, headers, json_data=params)
-        
+        client = McpApiClient(params.get("account"))
+        return client.call(f"/v2/sms_campaign/snowflake/{campaign_id}/", "PUT", body={"status": status})
     except Exception as e:
         sys.stderr.write(f"[callhub] Error updating P2P campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def delete_p2p_campaign(params: Dict) -> Dict:
+def delete_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Delete a P2P campaign by ID using Snowflake endpoint.
     
@@ -147,21 +84,13 @@ def delete_p2p_campaign(params: Dict) -> Dict:
         return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
     
     try:
-        # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("account"))
-        
-        # Build URL using Snowflake endpoint
-        url = build_url(base_url, "v2/sms_campaign/snowflake/{}/", campaign_id)
-        headers = get_auth_headers(api_key)
-        
-        # Make API call
-        return api_call("DELETE", url, headers)
-        
+        client = McpApiClient(params.get("account"))
+        return client.call(f"/v2/sms_campaign/snowflake/{campaign_id}/", "DELETE")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error deleting P2P campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def get_p2p_campaign_agents(params: Dict) -> Dict:
+def get_p2p_campaign_agents(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Get agents for a P2P campaign using Collective Texting endpoint.
     
@@ -178,17 +107,13 @@ def get_p2p_campaign_agents(params: Dict) -> Dict:
         return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
     
     try:
-        account_name, api_key, base_url = get_account_config(params.get("account"))
-        url = build_url(base_url, "v2/collective_texting/{}/agents/", campaign_id)
-        headers = get_auth_headers(api_key)
-        
-        return api_call("GET", url, headers)
-        
+        client = McpApiClient(params.get("account"))
+        return client.call(f"/v2/collective_texting/{campaign_id}/agents/", "GET")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error getting P2P campaign agents: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def add_agents_to_p2p_campaign(params: Dict) -> Dict:
+def add_agents_to_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Add agents to a P2P campaign using Collective Texting endpoint.
     
@@ -210,19 +135,14 @@ def add_agents_to_p2p_campaign(params: Dict) -> Dict:
         return {"isError": True, "content": [{"type": "text", "text": "'agentIds' is required."}]}
     
     try:
-        account_name, api_key, base_url = get_account_config(params.get("account"))
-        url = build_url(base_url, "v2/collective_texting/{}/agents/add/", campaign_id)
-        headers = get_auth_headers(api_key, "application/json")
-        
+        client = McpApiClient(params.get("account"))
         data = {"agents": agent_ids}
-        
-        return api_call("POST", url, headers, json_data=data)
-        
+        return client.call(f"/v2/collective_texting/{campaign_id}/agents/add/", "POST", body=data)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error adding agents to P2P campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def reassign_p2p_agents(params: Dict) -> Dict:
+def reassign_p2p_agents(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Reassign agents in a P2P campaign using Collective Texting endpoint.
     
@@ -242,29 +162,15 @@ def reassign_p2p_agents(params: Dict) -> Dict:
         return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
     
     try:
-        account_name, api_key, base_url = get_account_config(params.get("account"))
-        url = build_url(base_url, "v2/collective_texting/{}/agents/reassign/", campaign_id)
-        headers = get_auth_headers(api_key, "application/json")
-        
-        return api_call("POST", url, headers, json_data=reassign_data)
-        
+        client = McpApiClient(params.get("account"))
+        return client.call(f"/v2/collective_texting/{campaign_id}/agents/reassign/", "POST", body=reassign_data)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error reassigning P2P agents: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def create_p2p_campaign(params: Dict) -> Dict:
+def create_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Create a new P2P (Snowflake) campaign.
-    
-    FIXED VERSION - Based on VB System integration testing July 2025
-    
-    Key Fixes Applied:
-    - Recommend template_id (integer) instead of script object structure
-    - Handle SSL certificate issues for local development (0.0.0.0)
-    - Support minimal required fields
-    - Convert script object to template_id automatically
-    - Better error handling with specific messages
-    
     Args:
         params: Dictionary containing campaign configuration data including:
             account (str, optional): The account name to use
@@ -273,13 +179,13 @@ def create_p2p_campaign(params: Dict) -> Dict:
                 template_id (int): Survey template ID - USE THIS instead of script object
                 phonebooks (List[str]): List of phonebook IDs (required)
                 callerid_options (Dict): Caller ID configuration (required)
-                schedule (Dict, optional): Campaign schedule 
+                schedule (Dict, optional): Campaign schedule
                 agent_settings (Dict, optional): Agent configuration
                 contact_options (Dict, optional): Contact handling options
-    
+
     Returns:
         dict: API response containing created campaign data or error information
-        
+
     Example Usage:
         params = {
             "account": "engineering+mocktest@callhub.io",
@@ -291,7 +197,7 @@ def create_p2p_campaign(params: Dict) -> Dict:
             }
         }
     """
-    campaign_data = params.get("campaign_data", params) # Handle both nested and flat params
+    campaign_data = params.get("campaign_data", params)
     
     # Extract and validate required parameters
     callerid_options = campaign_data.get("callerid_options")
@@ -328,7 +234,7 @@ def create_p2p_campaign(params: Dict) -> Dict:
     if not template_id and not script:
         return {
             "isError": True,
-            "content": [{"type": "text", "text": "Either 'template_id' or 'script' must be provided. Recommended: use template_id (integer)."}]
+            "content": [{"type": "text", "text": "Either 'template_id' or 'script' must be provided."}]
         }
 
     # Build minimal payload (LESSON: Start with minimal fields, let API set defaults)
@@ -350,21 +256,10 @@ def create_p2p_campaign(params: Dict) -> Dict:
             payload[field] = campaign_data[field]
     
     try:
-        # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("account"))
-        
-        # Build URL using P2P campaigns endpoint
-        url = build_url(base_url, "v1/p2p_campaigns/")
-        headers = get_auth_headers(api_key, "application/json")
-        
-        # Log the payload being sent for debugging
+        client = McpApiClient(params.get("account"))
         sys.stderr.write(f"[callhub] Template ID: {template_id}\n")
         sys.stderr.write(f"[callhub] Payload: {json.dumps(payload, indent=2)}\n")
-        sys.stderr.write(f"[callhub] URL: {url}\n")
-        
-        # Make API call with SSL handling for local development
-        response = api_call("POST", url, headers, json_data=payload)
-        
+        response = client.call("/v1/p2p_campaigns/", "POST", body=payload)
         # Handle successful response
         if not response.get("isError") and "id" in response:
             sys.stderr.write(f"[callhub] ✅ P2P Campaign created successfully!\n")
@@ -384,25 +279,13 @@ def create_p2p_campaign(params: Dict) -> Dict:
         
         # Provide helpful error messages based on common issues discovered during testing
         if "SSL" in error_msg.upper():
-            return {
-                "isError": True, 
-                "content": [{
-                    "type": "text", 
-                    "text": f"SSL Error: {error_msg}. For local development with 0.0.0.0, use HTTP base URL instead of HTTPS."
-                }]
-            }
+            return {"isError": True, "content": [{"type": "text", "text": f"SSL Error: {error_msg}."}]}
         elif "Connection" in error_msg:
-            return {
-                "isError": True, 
-                "content": [{
-                    "type": "text", 
-                    "text": f"Connection Error: {error_msg}. Check if the base URL is accessible."
-                }]
-            }
+            return {"isError": True, "content": [{"type": "text", "text": f"Connection Error: {error_msg}."}]}
         else:
             return {"isError": True, "content": [{"type": "text", "text": error_msg}]}
 
-def get_p2p_surveys(params: Dict) -> Dict:
+def get_p2p_surveys(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Get surveys for a P2P campaign using Snowflake survey endpoint.
     
@@ -415,23 +298,20 @@ def get_p2p_surveys(params: Dict) -> Dict:
         dict: API response containing survey data
     """
     try:
-        account_name, api_key, base_url = get_account_config(params.get("account"))
-        
+        client = McpApiClient(params.get("account"))
         campaign_id = params.get("campaignId")
+        
         if campaign_id:
-            url = build_url(base_url, "v2/sms_campaign/snowflake/survey-list/{}/", campaign_id)
+            url = f"/v2/sms_campaign/snowflake/survey-list/{campaign_id}/"
         else:
-            url = build_url(base_url, "v2/sms_campaign/snowflake/survey-list/")
+            url = "/v2/sms_campaign/snowflake/survey-list/"
         
-        headers = get_auth_headers(api_key)
-        
-        return api_call("GET", url, headers)
-        
+        return client.call(url, "GET")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error getting P2P surveys: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def duplicate_p2p_campaign(params: Dict) -> Dict:
+def duplicate_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Duplicate a P2P campaign.
 
@@ -448,10 +328,8 @@ def duplicate_p2p_campaign(params: Dict) -> Dict:
         return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
 
     try:
-        account_name, api_key, base_url = get_account_config(params.get("account"))
-        url = build_url(base_url, "v1/p2p_campaigns/{}/duplicate/", campaign_id)
-        headers = get_auth_headers(api_key)
-        return api_call("POST", url, headers)
+        client = McpApiClient(params.get("account"))
+        return client.call(f"/v1/p2p_campaigns/{campaign_id}/duplicate/", "POST")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error duplicating P2P campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

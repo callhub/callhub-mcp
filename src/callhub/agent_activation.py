@@ -11,13 +11,13 @@ import csv
 import time
 import sys
 import json
-import requests
-from typing import Dict, List, Union, Optional, Any, Tuple
+import re
+from typing import Dict, Any, Optional
 
 from .auth import get_account_config
-from .utils import build_url, get_auth_headers
+from .utils import build_url, get_auth_headers, api_call
 
-def export_agent_activation_urls(account_name: Optional[str] = None, max_retries: int = 20, 
+def export_agent_activation_urls(account_name: Optional[str] = None, max_retries: int = 20,
                                  retry_interval: int = 3) -> Dict:
     """
     Export and retrieve agent activation URLs from CallHub.
@@ -123,44 +123,37 @@ def start_activation_export(account_name: Optional[str] = None) -> Dict:
     url = build_url(base_url, "/agent/reactivate_export/")
     headers = get_auth_headers(api_key)
     
-    try:
-        sys.stderr.write(f"[callhub] Starting agent activation export...\n")
-        
-        # Make the request to start the export
-        resp = requests.get(url, headers=headers)
-        sys.stderr.write(f"[callhub] Activation export response status: {resp.status_code}\n")
-        
-        if resp.status_code >= 400:
-            error_msg = f"HTTP Error: {resp.status_code} - {resp.reason}"
-            
-            # Check if this is an authentication error
-            if resp.status_code in (401, 403):
-                error_msg = "Authentication failed. This endpoint may require session-based authentication rather than API key."
-                
-            return {"isError": True, "content": [{"type": "text", "text": error_msg}]}
-        
-        # Try to extract the job ID from the response HTML
-        text = resp.text
-        
-        # Look for the progress_job_id in the JavaScript variables in the HTML
-        import re
-        job_id_match = re.search(r'var progress_job_id = "([^"]+)";', text)
-        
-        if not job_id_match:
-            return {
-                "isError": True, 
-                "content": [{"type": "text", "text": "Could not find export job ID in response. This may indicate an authentication issue."}]
-            }
-        
-        job_id = job_id_match.group(1)
-        sys.stderr.write(f"[callhub] Export job ID: {job_id}\n")
-        
-        # Return the job ID for tracking
-        return {"job_id": job_id}
-        
-    except Exception as e:
-        sys.stderr.write(f"[callhub] Exception in start_activation_export: {str(e)}\n")
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+    sys.stderr.write(f"[callhub] Starting agent activation export...\n")
+
+    # Make the request to start the export
+    response = api_call("GET", url, headers)
+    sys.stderr.write( f"[callhub] Activation export response: {response}\n" )
+
+    if response.get("isError"):
+        return
+
+    # Try to extract the job ID from the response HTML
+    text = response.get("message", "")
+    if not text and response.get("content"):
+        text = response["content"][0].get("text", "")
+
+    if not text:
+        return {"isError": True, "content": [{"type": "text", "text": "Could not find response text."}]}
+
+    # Look for the progress_job_id in the JavaScript variables in the HTML
+    job_id_match = re.search(r'var progress_job_id = "([^"]+)";', text)
+    
+    if not job_id_match:
+        return {
+            "isError": True, 
+            "content": [{"type": "text", "text": "Could not find export job ID in response. This may indicate an authentication issue."}]
+        }
+    
+    job_id = job_id_match.group(1)
+    sys.stderr.write(f"[callhub] Export job ID: {job_id}\n")
+
+    # Return the job ID for tracking
+    return {"job_id": job_id}
 
 def check_export_status(account_name: Optional[str] = None, job_id: str = None) -> Dict:
     """
@@ -183,69 +176,50 @@ def check_export_status(account_name: Optional[str] = None, job_id: str = None) 
     timestamp = int(time.time() * 1000)
     url = build_url(base_url, f"/exported_file/progress/{job_id}/?_={timestamp}")
     headers = get_auth_headers(api_key)
+
+
+    # Make the request to check progress
+    result = api_call("GET", url, headers)
+    sys.stderr.write( f"[callhub] Status check response: {result}\n" )
+
+    if result.get("isError"):
+        return result
+
+    sys.stderr.write(f"[callhub] Status check result: {json.dumps(result)}\n")
     
-    try:
-        # Make the request to check progress
-        resp = requests.get(url, headers=headers)
-        sys.stderr.write(f"[callhub] Status check response status: {resp.status_code}\n")
+    state = result.get("state")
+
+    # If success, extract the download URL
+    if state == "SUCCESS":
+        data = result.get("data", {})
+        url = data.get("url")
         
-        if resp.status_code >= 400:
-            error_msg = f"HTTP Error: {resp.status_code} - {resp.reason}"
-            
-            # Check if this is an authentication error
-            if resp.status_code in (401, 403):
-                error_msg = "Authentication failed. This endpoint may require session-based authentication."
-                
-            return {"isError": True, "content": [{"type": "text", "text": error_msg}]}
-        
-        # Parse the JSON response
-        try:
-            result = resp.json()
-            sys.stderr.write(f"[callhub] Status check result: {json.dumps(result)}\n")
-            
-            state = result.get("state")
-            
-            # If success, extract the download URL
-            if state == "SUCCESS":
-                data = result.get("data", {})
-                url = data.get("url")
-                
-                if not url:
-                    return {
-                        "isError": True, 
-                        "content": [{"type": "text", "text": "No download URL found in response"}]
-                    }
-                
-                return {
-                    "state": state,
-                    "download_url": url
-                }
-            
-            # If still in progress, return progress information
-            elif state == "PROGRESS":
-                data = result.get("data", {})
-                
-                return {
-                    "state": state,
-                    "progress": data
-                }
-            
-            # Any other state is treated as an error
-            else:
-                return {
-                    "isError": True, 
-                    "content": [{"type": "text", "text": f"Unknown export state: {state}"}]
-                }
-                
-        except json.JSONDecodeError:
+        if not url:
             return {
                 "isError": True, 
-                "content": [{"type": "text", "text": "Invalid JSON response from status endpoint"}]
+                "content": [{"type": "text", "text": "No download URL found in response"}]
             }
         
-    except Exception as e:
-        sys.stderr.write(f"[callhub] Exception in check_export_status: {str(e)}\n")
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+        return {
+            "state": state,
+            "download_url": url
+        }
+
+    # If still in progress, return progress information
+    elif state == "PROGRESS":
+        data = result.get("data", {})
+        
+        return {
+            "state": state,
+            "progress": data
+        }
+
+    # Any other state is treated as an error
+    else:
+        return {
+            "isError": True, 
+            "content": [{"type": "text", "text": f"Unknown export state: {state}"}]
+        }
 
 def download_activation_csv(account_name: Optional[str] = None, download_url: str = None) -> Dict:
     """
@@ -270,27 +244,22 @@ def download_activation_csv(account_name: Optional[str] = None, download_url: st
         url = base_url + "/" + download_url
         
     headers = get_auth_headers(api_key)
-    
-    try:
-        # Make the request to download the CSV
-        resp = requests.get(url, headers=headers)
-        sys.stderr.write(f"[callhub] CSV download response status: {resp.status_code}\n")
-        
-        if resp.status_code >= 400:
-            error_msg = f"HTTP Error: {resp.status_code} - {resp.reason}"
-            
-            # Check if this is an authentication error
-            if resp.status_code in (401, 403):
-                error_msg = "Authentication failed. This endpoint may require session-based authentication."
-                
-            return {"isError": True, "content": [{"type": "text", "text": error_msg}]}
-        
-        # Return the CSV data
-        return {"csv_data": resp.text}
-        
-    except Exception as e:
-        sys.stderr.write(f"[callhub] Exception in download_activation_csv: {str(e)}\n")
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+    # Make the request to download the CSV
+    response = api_call("GET", url, headers)
+    sys.stderr.write( f"[callhub] CSV download response status: {response.status_code}\n" )
+    if response.get("isError"):
+        return response
+
+    csv_data = response.get("message", "")
+    if not csv_data and response.get("content"):
+        csv_data = response["content"][0].get("text", "")
+
+    if not csv_data:
+        return {"isError": True, "content": [{"type": "text", "text": "Failed to get CSV data."}]}
+
+    # Return the CSV data
+    return {"csv_data": csv_data}
 
 def parse_activation_csv(csv_data: str) -> Dict:
     """

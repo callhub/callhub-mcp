@@ -277,8 +277,8 @@ from callhub.integration_fields import (
 )
 
 from callhub.urls import (
-    getShortenedUrl,
-    listShortenedUrls
+    get_shortened_url,
+    list_shortened_urls
 )
 
 from callhub.api_utils import (
@@ -2940,7 +2940,7 @@ def get_shortened_url_tool(
         if shortCode:
             params["shortCode"] = shortCode
         
-        return getShortenedUrl(params)
+        return get_shortened_url(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -2960,7 +2960,7 @@ def list_shortened_urls_tool(
         if pageSize is not None:
             params["pageSize"] = pageSize
         
-        return listShortenedUrls(params)
+        return list_shortened_urls(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 

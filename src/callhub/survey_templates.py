@@ -7,13 +7,9 @@ This module provides functions for managing survey templates in CallHub.
 Based on Django REST framework serializers for PSurvey_template and PSection_template.
 """
 
-import json
-import sys
-from typing import Dict,  Any
+from typing import Dict, Any
 
-from .auth import get_account_config
-from .utils import build_url, api_call, get_auth_headers
-
+from .client import McpApiClient
 
 def list_survey_templates(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -25,14 +21,8 @@ def list_survey_templates(params: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Dictionary with survey templates list or error information
     """
-    account_name = params.get("accountName")
-    account, api_key, base_url = get_account_config(account_name)
-    
-    url = build_url(base_url, "/v1/templates/")
-    headers = get_auth_headers(api_key)
-    
-    return api_call("GET", url, headers)
-
+    client = McpApiClient(params.get("accountName"))
+    return client.call("/v1/templates/", "GET")
 
 def get_survey_template(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -44,21 +34,12 @@ def get_survey_template(params: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Dictionary with survey template details or error information
     """
-    account_name = params.get("accountName")
     template_id = params.get("templateId")
-    
     if not template_id:
-        return {
-            "isError": True,
-            "content": [{"type": "text", "text": "templateId is required"}]
-        }
+        return {"isError": True, "content": [{"type": "text", "text": "templateId is required"}]}
     
-    account, api_key, base_url = get_account_config(account_name)
-    url = build_url(base_url, "/v1/templates/{}/", template_id)
-    headers = get_auth_headers(api_key)
-    
-    return api_call("GET", url, headers)
-
+    client = McpApiClient(params.get("accountName"))
+    return client.call(f"/v1/templates/{template_id}/", "GET")
 
 def create_survey_template(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -73,28 +54,13 @@ def create_survey_template(params: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Dictionary with created survey template or error information
     """
-    account_name = params.get("accountName")
     label = params.get("label")
-    questions = params.get("questions", [])
-    
     if not label:
-        return {
-            "isError": True,
-            "content": [{"type": "text", "text": "label is required"}]
-        }
+        return {"isError": True, "content": [{"type": "text", "text": "label is required"}]}
     
-    account, api_key, base_url = get_account_config(account_name)
-    url = build_url(base_url, "/v1/templates/")
-    headers = get_auth_headers(api_key)
-    
-    # Prepare the survey template data
-    survey_data = {
-        "label": label,
-        "questions": questions
-    }
-    
-    return api_call("POST", url, headers, json_data=survey_data)
-
+    client = McpApiClient(params.get("accountName"))
+    survey_data = {"label": label, "questions": params.get("questions", [])}
+    return client.call("/v1/templates/", "POST", body=survey_data)
 
 def update_survey_template(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -110,14 +76,9 @@ def update_survey_template(params: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Dictionary with updated survey template or error information
     """
-    account_name = params.get("accountName")
     template_id = params.get("templateId")
-    
     if not template_id:
-        return {
-            "isError": True,
-            "content": [{"type": "text", "text": "templateId is required"}]
-        }
+        return {"isError": True, "content": [{"type": "text", "text": "templateId is required"}]}
     
     # Prepare update data (only include fields that are provided)
     update_data = {}
@@ -127,17 +88,10 @@ def update_survey_template(params: Dict[str, Any]) -> Dict[str, Any]:
         update_data["questions"] = params["questions"]
     
     if not update_data:
-        return {
-            "isError": True,
-            "content": [{"type": "text", "text": "No update data provided. Include 'label' and/or 'questions' to update."}]
-        }
+        return {"isError": True, "content": [{"type": "text", "text": "No update data provided."}]}
     
-    account, api_key, base_url = get_account_config(account_name)
-    url = build_url(base_url, "/v1/templates/{}/", template_id)
-    headers = get_auth_headers(api_key)
-    
-    return api_call("PATCH", url, headers, json_data=update_data)
-
+    client = McpApiClient(params.get("accountName"))
+    return client.call(f"/v1/templates/{template_id}/", "PATCH", body=update_data)
 
 def delete_survey_template(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -149,21 +103,12 @@ def delete_survey_template(params: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Dictionary with deletion result or error information
     """
-    account_name = params.get("accountName")
     template_id = params.get("templateId")
-    
     if not template_id:
-        return {
-            "isError": True,
-            "content": [{"type": "text", "text": "templateId is required"}]
-        }
+        return {"isError": True, "content": [{"type": "text", "text": "templateId is required"}]}
     
-    account, api_key, base_url = get_account_config(account_name)
-    url = build_url(base_url, "/v1/templates/{}/", template_id)
-    headers = get_auth_headers(api_key)
-    
-    return api_call("DELETE", url, headers)
-
+    client = McpApiClient(params.get("accountName"))
+    return client.call(f"/v1/templates/{template_id}/", "DELETE")
 
 def create_question_template(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -181,21 +126,15 @@ def create_question_template(params: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Dictionary with created question template or error information
     """
-    account_name = params.get("accountName")
     question_type = params.get("type")
     question_text = params.get("question")
     survey_template_id = params.get("survey_template_id")
     
     if not all([question_type, question_text, survey_template_id]):
-        return {
-            "isError": True,
-            "content": [{"type": "text", "text": "type, question, and survey_template_id are required"}]
-        }
+        return {"isError": True, "content": [{"type": "text", "text": "type, question, and survey_template_id are required"}]}
     
-    account, api_key, base_url = get_account_config(account_name)
-    url = build_url(base_url, "/api/question-templates/")
-    headers = get_auth_headers(api_key)
-    
+    client = McpApiClient(params.get("accountName"))
+
     # Prepare the question template data
     question_data = {
         "type": question_type,
@@ -209,4 +148,4 @@ def create_question_template(params: Dict[str, Any]) -> Dict[str, Any]:
     if "is_initial_message" in params:
         question_data["is_initial_message"] = params["is_initial_message"]
     
-    return api_call("POST", url, headers, json_data=question_data)
+    return client.call("/api/question-templates/", "POST", body=question_data)

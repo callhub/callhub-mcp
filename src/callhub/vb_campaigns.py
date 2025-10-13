@@ -4,25 +4,20 @@ Client for interacting with CallHub vb campaign APIs.
 import sys
 from typing import Dict, Any
 
-from .auth import get_account_config
-from .utils import api_call , build_url , get_auth_headers
+from .client import McpApiClient
 
-
-def get_vb_campaign(params: dict):
+def get_vb_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Get a single vb campaign.
     """
     campaign_id = params.get("campaignId")
     if not campaign_id:
         return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
-    account_name = params.get( "accountName" )
-    account , api_key , base_url = get_account_config( account_name )
+    
+    client = McpApiClient(params.get("accountName"))
+    return client.call(f"/v1/vb_campaign/{campaign_id}/", "GET")
 
-    url = build_url( base_url , "/v1/vb_campaign/{}" , campaign_id )
-    headers = get_auth_headers( api_key )
-    return api_call('GET', url, params=params,headers=headers)
-
-def create_voice_broadcast_campaign(params: Dict[str, Any]) -> Dict:
+def create_voice_broadcast_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Create a new voice broadcast campaign.
 
@@ -39,16 +34,7 @@ def create_voice_broadcast_campaign(params: Dict[str, Any]) -> Dict:
         dict: API response containing campaign data or error information
     """
     try:
-        # Get account configuration
-        account_name = params.get( "accountName" )
-        account_name, api_key, base_url = get_account_config(account_name)
-
-        # Build URL and headers
-        url = build_url(base_url, "v1/vb_campaign/")
-        headers = get_auth_headers(api_key)
-        headers["Content-Type"] = "application/json"
-
-        # Prepare data payload
+        client = McpApiClient(params.get("accountName"))
         data = {
             "phonebooks": params.get("phonebooks"),
             "callerid_options": params.get("callerid_options"),
@@ -56,16 +42,12 @@ def create_voice_broadcast_campaign(params: Dict[str, Any]) -> Dict:
             "template_id": params.get("template_id"),
             "schedule": params.get("schedule"),
         }
-
-        # Make API call
-        return api_call("POST", url, headers, json_data=data)
-
+        return client.call("/v1/vb_campaign/", "POST", body=data)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error creating voice broadcast campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-
-def create_vb_campaign_template(params: Dict[str, Any]) -> Dict:
+def create_vb_campaign_template(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Create a new voice broadcast campaign template.
 
@@ -81,32 +63,19 @@ def create_vb_campaign_template(params: Dict[str, Any]) -> Dict:
         dict: API response containing template data or error information
     """
     try:
-        # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("accountName"))
-
-        # Build URL and headers
-        url = build_url(base_url, "/v1/vb_templates/")
-        headers = get_auth_headers(api_key)
-        headers["Content-Type"] = "application/json"
-
-        # Prepare data payload
+        client = McpApiClient(params.get("accountName"))
         data = {
             "label": params.get("label"),
             "live_message": params.get("live_message"),
             "transfers": params.get("transfers"),
             "dnc_option": params.get("dnc_option"),
         }
-
-        # Make API call
-        return api_call("POST", url, headers, json_data=data)
-
+        return client.call("/v1/vb_templates/", "POST", body=data)
     except Exception as e:
-        import sys
         sys.stderr.write(f"[callhub] Error creating VB campaign template: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-
-def list_voice_broadcasts (params: Dict) -> Dict :
+def list_voice_broadcasts(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     List all voice broadcast campaigns with optional pagination.
 
@@ -119,29 +88,19 @@ def list_voice_broadcasts (params: Dict) -> Dict :
     Returns:
         dict: API response containing campaign data or error information
     """
-    try :
-        # Get account configuration
-        account_name , api_key , base_url = get_account_config( params.get( "accountName" ) )
+    try:
+        client = McpApiClient(params.get("accountName"))
+        query_params = {}
+        if params.get("page") is not None:
+            query_params["page"] = params["page"]
+        if params.get("pageSize") is not None:
+            query_params["page_size"] = params["pageSize"]
+        return client.call("/v1/voice_broadcasts/", "GET", query=query_params)
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error listing voice broadcast campaigns: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-        # Build URL and headers
-        url = build_url( base_url , "v1/voice_broadcasts/" )
-        headers = get_auth_headers( api_key )
-
-        # Prepare query parameters
-        query_params = { }
-        if params.get( "page" ) is not None :
-            query_params[ "page" ] = params[ "page" ]
-        if params.get( "pageSize" ) is not None :
-            query_params[ "page_size" ] = params[ "pageSize" ]
-
-        # Make API call
-        return api_call( "GET" , url , headers , params = query_params )
-
-    except Exception as e :
-        sys.stderr.write( f"[callhub] Error listing voice broadcast campaigns: {str( e )}\n" )
-        return { "isError" : True , "content" : [ { "type" : "text" , "text" : str( e ) } ] }
-
-def duplicate_vb_campaign(params: Dict) -> Dict:
+def duplicate_vb_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Duplicate a voice broadcast campaign.
 
@@ -153,15 +112,13 @@ def duplicate_vb_campaign(params: Dict) -> Dict:
     Returns:
         dict: API response from the duplicate operation
     """
-    campaign_id = params.get("campaignId")
-    if not campaign_id:
-        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
-
     try:
-        account_name, api_key, base_url = get_account_config(params.get("account"))
-        url = build_url(base_url, f"v1/vb_campaign/{campaign_id}/duplicate/")
-        headers = get_auth_headers(api_key)
-        return api_call("POST", url, headers)
+        campaign_id = params.get("campaignId")
+        if not campaign_id:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+        client = McpApiClient(params.get("account"))
+        return client.call(f"/v1/vb_campaign/{campaign_id}/duplicate/", "POST")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error duplicating voice broadcast campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

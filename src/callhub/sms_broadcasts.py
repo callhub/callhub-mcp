@@ -5,13 +5,11 @@ SMS Broadcast operations for CallHub API.
 
 import sys
 from datetime import datetime, timedelta
-from typing import Dict, List, Union, Optional, Any
+from typing import Dict, Any
 
-from .utils import build_url, api_call, get_auth_headers
-from .auth import get_account_config
+from .client import McpApiClient
 
-
-def create_sms_broadcast(params: Dict) -> Dict:
+def create_sms_broadcast(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Create a new SMS broadcast campaign.
 
@@ -49,54 +47,38 @@ def create_sms_broadcast(params: Dict) -> Dict:
     Returns:
         dict: API response containing the created campaign data
     """
-    # Validate required parameters
-    required_fields = ["name", "text_message", "phonebook", "callerid"]
-    for key in required_fields:
-        if not params.get(key):
-            return {"isError": True, "content": [{"type": "text", "text": f"'{key}' is required."}]}
-
     try:
-        # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("account"))
+        required_fields = ["name", "text_message", "phonebook", "callerid"]
+        for key in required_fields:
+            if not params.get(key):
+                return {"isError": True, "content": [{"type": "text", "text": f"'{key}' is required."}]}
 
-        # Build URL and headers
-        url = build_url(base_url, "v2/sms_broadcast/create/")
-        headers = get_auth_headers(api_key, "application/json")
+        client = McpApiClient(params.get("account"))
 
-        # Prepare data with required fields
         data = {
             "name": params.get("name"),
             "text_message": params.get("text_message"),
             "phonebook": params.get("phonebook"),
-            "callerid": params.get("callerid")
+            "callerid": params.get("callerid"),
+            "callerid_choice": params.get("callerid_choice", "exists"),
+            "opt_out_language": params.get("opt_out_language", ""),
+            "intervalretry": params.get("intervalretry", 5),
+            "maxretry": params.get("maxretry", 0),
+            "dont_text_dnc": params.get("dont_text_dnc", False),
+            "dont_text_litigator": params.get("dont_text_litigator", True),
+            "daily_start_time": params.get("daily_start_time", "08:00"),
+            "daily_stop_time": params.get("daily_stop_time", "21:00"),
+            "monday": params.get("monday", "on"),
+            "tuesday": params.get("tuesday", "on"),
+            "wednesday": params.get("wednesday", "on"),
+            "thursday": params.get("thursday", "on"),
+            "friday": params.get("friday", "on"),
+            "saturday": params.get("saturday", "on"),
+            "sunday": params.get("sunday", "on"),
+            "startingdate": params.get("startingdate", datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+            "expirationdate": params.get("expirationdate", (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S"))
         }
 
-        # Add fields with defaults
-        data["callerid_choice"] = params.get("callerid_choice", "exists")
-        data["opt_out_language"] = params.get("opt_out_language", "")
-        data["intervalretry"] = params.get("intervalretry", 5)
-        data["maxretry"] = params.get("maxretry", 0)
-        data["dont_text_dnc"] = params.get("dont_text_dnc", False)
-        data["dont_text_litigator"] = params.get("dont_text_litigator", True)
-
-        # Add default scheduling times to prevent NoneType comparison error
-        data["daily_start_time"] = params.get("daily_start_time", "08:00")
-        data["daily_stop_time"] = params.get("daily_stop_time", "21:00")
-
-        # Add default weekdays (all days on) to prevent validation error
-        data["monday"] = params.get("monday", "on")
-        data["tuesday"] = params.get("tuesday", "on")
-        data["wednesday"] = params.get("wednesday", "on")
-        data["thursday"] = params.get("thursday", "on")
-        data["friday"] = params.get("friday", "on")
-        data["saturday"] = params.get("saturday", "on")
-        data["sunday"] = params.get("sunday", "on")
-
-        # Add default dates if not provided (required for weekday validation)
-        data["startingdate"] = params.get("startingdate", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        data["expirationdate"] = params.get("expirationdate", (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S"))
-
-        # Add optional fields if provided
         optional_fields = [
             "help_compliance_message", "description", "timezone_choices",
             "use_contact_tz", "auto_replies", "base_short_url", "country_iso",
@@ -111,14 +93,12 @@ def create_sms_broadcast(params: Dict) -> Dict:
             if field in params and params[field] is not None:
                 data[field] = params[field]
 
-        # Make API call
-        return api_call("POST", url, headers, json_data=data)
-
+        return client.call("/v2/sms_broadcast/create/", "POST", body=data)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error creating SMS broadcast campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def get_sms_broadcast(params: Dict) -> Dict:
+def get_sms_broadcast(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Get details of an SMS broadcast campaign.
 
@@ -130,20 +110,18 @@ def get_sms_broadcast(params: Dict) -> Dict:
     Returns:
         dict: API response containing the campaign data
     """
-    campaign_id = params.get("campaignId")
-    if not campaign_id:
-        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
-
     try:
-        account_name, api_key, base_url = get_account_config(params.get("account"))
-        url = build_url(base_url, "v2/sms_broadcast/{}/", campaign_id)
-        headers = get_auth_headers(api_key)
-        return api_call("GET", url, headers)
+        campaign_id = params.get("campaignId")
+        if not campaign_id:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+        client = McpApiClient(params.get("account"))
+        return client.call(f"v2/sms_broadcast/{campaign_id}/", "GET")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error getting SMS broadcast campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def update_sms_broadcast(params: Dict) -> Dict:
+def update_sms_broadcast(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Update an SMS broadcast campaign's status.
     
@@ -158,55 +136,36 @@ def update_sms_broadcast(params: Dict) -> Dict:
     Returns:
         dict: API response from the update operation
     """
-    # Validate required parameters
-    campaign_id = params.get("campaignId")
-    if not campaign_id:
-        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
-    
-    status = params.get("status")
-    if status is None:
-        return {"isError": True, "content": [{"type": "text", "text": "'status' is required."}]}
-    
-    # Map string status to numeric status if needed
-    status_mapping = {
-        "start": 1,
-        "pause": 2,
-        "abort": 3,
-        "end": 4
-    }
-    
-    # If a string status was provided, convert it to numeric
-    if isinstance(status, str) and status.lower() in status_mapping:
-        status = status_mapping[status.lower()]
-    # If a numeric status as string was provided, convert to int
-    elif isinstance(status, str) and status.isdigit():
-        status = int(status)
-    # Check if status is valid now
-    if not isinstance(status, int) or status < 1 or status > 4:
-        return {
-            "isError": True, 
-            "content": [{"type": "text", "text": "Valid 'status' is required: start, pause, abort, end, or a valid numeric status (1-4)"}]
-        }
-    
     try:
-        # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("account"))
+        campaign_id = params.get("campaignId")
+        if not campaign_id:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
         
-        # Build URL and headers
-        url = build_url(base_url, "v2/sms_broadcast/{}/", campaign_id)
-        headers = get_auth_headers(api_key, "application/json")
+        status = params.get("status")
+        if status is None:
+            return {"isError": True, "content": [{"type": "text", "text": "'status' is required."}]}
         
-        # Prepare data
+        status_mapping = {"start": 1, "pause": 2, "abort": 3, "end": 4}
+        
+        if isinstance(status, str) and status.lower() in status_mapping:
+            status = status_mapping[status.lower()]
+        elif isinstance(status, str) and status.isdigit():
+            status = int(status)
+        
+        if not isinstance(status, int) or status < 1 or status > 4:
+            return {
+                "isError": True, 
+                "content": [{"type": "text", "text": "Valid 'status' is required: start, pause, abort, end, or a valid numeric status (1-4)"}]
+            }
+        
+        client = McpApiClient(params.get("account"))
         data = {"status": status}
-        
-        # Make API call
-        return api_call("PATCH", url, headers, json_data=data)
-        
+        return client.call(f"v2/sms_broadcast/{campaign_id}/", "PATCH", body=data)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error updating SMS broadcast campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def duplicate_sms_broadcast(params: Dict) -> Dict:
+def duplicate_sms_broadcast(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Duplicate an SMS broadcast campaign.
 
@@ -218,15 +177,14 @@ def duplicate_sms_broadcast(params: Dict) -> Dict:
     Returns:
         dict: API response from the duplicate operation
     """
-    campaign_id = params.get("campaignId")
-    if not campaign_id:
-        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
-
     try:
-        account_name, api_key, base_url = get_account_config(params.get("account"))
-        url = build_url(base_url, "v2/sms_broadcast/{}/duplicate/", campaign_id)
-        headers = get_auth_headers(api_key)
-        return api_call("POST", url, headers)
+        campaign_id = params.get("campaignId")
+        if not campaign_id:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+        client = McpApiClient(params.get("account"))
+        return client.call(f"v2/sms_broadcast/{campaign_id}/duplicate/", "POST")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error duplicating SMS broadcast campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+

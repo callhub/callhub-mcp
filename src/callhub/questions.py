@@ -6,13 +6,9 @@ CallHub Questions Management - API Integration
 This module provides functions for managing questions (PDI/VAN) in CallHub.
 """
 
-import json
-import sys
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
-from .auth import get_account_config
-from .utils import build_url, api_call, get_auth_headers
-
+from .client import McpApiClient
 
 def list_questions(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -26,21 +22,15 @@ def list_questions(params: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Dictionary with questions list or error information
     """
-    account_name = params.get("accountName")
-    account, api_key, base_url = get_account_config(account_name)
-    
-    # Build URL with optional type filter
-    url = build_url(base_url, "/v1/questions/")
-    
+    client = McpApiClient(params.get("accountName"))
+    query_params = {}
+
     # Add type parameter if specified
     question_type = params.get("type")
     if question_type and question_type in ["PDI_QUESTION", "VAN_QUESTION"]:
-        url += f"?type={question_type}"
+        query_params["type"] = question_type
     
-    headers = get_auth_headers(api_key)
-    
-    return api_call("GET", url, headers)
-
+    return client.call("/v1/questions/", "GET", query=query_params)
 
 def get_question(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -54,17 +44,12 @@ def get_question(params: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Dictionary with question details or error information
     """
-    account_name = params.get("accountName")
     question_id = params.get("questionId")
-    
     if not question_id:
         return {
             "isError": True,
             "content": [{"type": "text", "text": "questionId is required"}]
         }
     
-    account, api_key, base_url = get_account_config(account_name)
-    url = build_url(base_url, "/v1/questions/{}/", question_id)
-    headers = get_auth_headers(api_key)
-    
-    return api_call("GET", url, headers)
+    client = McpApiClient(params.get("accountName"))
+    return client.call(f"/v1/questions/{question_id}/", "GET")

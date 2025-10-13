@@ -5,12 +5,11 @@ Call Center Campaign operations for CallHub API.
 
 import sys
 import json
-from typing import Dict, List, Union, Optional, Any
+from typing import Dict, Any
 
-from .utils import build_url, api_call, get_auth_headers, parse_input_fields
-from .auth import get_account_config
+from .client import McpApiClient
 
-def list_call_center_campaigns(params: Dict) -> Dict:
+def list_call_center_campaigns(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     List all call center campaigns with optional pagination.
     
@@ -24,28 +23,20 @@ def list_call_center_campaigns(params: Dict) -> Dict:
         dict: API response containing campaign data or error information
     """
     try:
-        # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("accountName"))
-        
-        # Build URL and headers
-        url = build_url(base_url, "v1/callcenter_campaigns/")
-        headers = get_auth_headers(api_key)
-        
-        # Prepare query parameters
+        client = McpApiClient(params.get("accountName"))
         query_params = {}
         if params.get("page") is not None:
             query_params["page"] = params["page"]
         if params.get("pageSize") is not None:
             query_params["page_size"] = params["pageSize"]
         
-        # Make API call
-        return api_call("GET", url, headers, params=query_params)
+        return client.call("/v1/callcenter_campaigns/", "GET", query=query_params)
         
     except Exception as e:
         sys.stderr.write(f"[callhub] Error listing call center campaigns: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def update_call_center_campaign(params: Dict) -> Dict:
+def update_call_center_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Update a call center campaign's status.
     
@@ -90,25 +81,16 @@ def update_call_center_campaign(params: Dict) -> Dict:
         }
     
     try:
-        # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("accountName"))
-        
-        # Build URL and headers
-        url = build_url(base_url, "v1/callcenter_campaigns/{}/", campaign_id)
-        headers = get_auth_headers(api_key, "application/json")
-        
-        # Prepare data
+        client = McpApiClient(params.get("accountName"))
         data = {"status": status}
-        
-        # Make API call
-        return api_call("PATCH", url, headers, json_data=data)
+        return client.call(f"/v1/callcenter_campaigns/{campaign_id}/", "PATCH", body=data)
         
     except Exception as e:
         sys.stderr.write(f"[callhub] Error updating call center campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-def create_call_center_campaign(params: Dict) -> Dict:
+def create_call_center_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Create a new call center campaign using the Power Campaign API.
     
@@ -283,21 +265,14 @@ def create_call_center_campaign(params: Dict) -> Dict:
     campaign_data["script"] = normalized_script
     
     try:
-        # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("accountName"))
-        
-        # Build URL and headers for power campaign creation
-        url = build_url(base_url, "v1/power_campaign/create/")
-        headers = get_auth_headers(api_key, "application/json")
-        
-        # Make API call
-        return api_call("POST", url, headers, json_data=campaign_data)
+        client = McpApiClient(params.get("accountName"))
+        return client.call("/v1/power_campaign/create/", "POST", body=campaign_data)
         
     except Exception as e:
         sys.stderr.write(f"[callhub] Error creating call center campaign: {str(e)}")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def exportCampaignData(params: Dict) -> Dict:
+def exportCampaignData(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Export campaign data in specified format.
     
@@ -316,26 +291,15 @@ def exportCampaignData(params: Dict) -> Dict:
         if not campaign_id:
             return {"isError": True, "content": [{"type": "text", "text": "Campaign ID is required"}]}
         
-        # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("accountName"))
-        
-        # Build URL and headers
-        url = build_url(base_url, f"v1/campaigns/{campaign_id}/export")
-        headers = get_auth_headers(api_key)
-        
-        # Prepare query parameters
-        query_params = {
-            "format": params.get("format", "csv")
-        }
-        
-        # Make API call
-        return api_call("GET", url, headers, params=query_params)
+        client = McpApiClient(params.get("accountName"))
+        query_params = {"format": params.get("format", "csv")}
+        return client.call(f"/v1/campaigns/{campaign_id}/export", "GET", query=query_params)
         
     except Exception as e:
-        sys.stderr.write(f"[callhub] Error exporting campaign data: {str(e)}")
+        sys.stderr.write(f"[callhub] Error exporting campaign data: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def getCampaignStatsAdvanced(params: Dict) -> Dict:
+def getCampaignStatsAdvanced(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Get enhanced campaign statistics.
     
@@ -354,26 +318,15 @@ def getCampaignStatsAdvanced(params: Dict) -> Dict:
         if not campaign_id:
             return {"isError": True, "content": [{"type": "text", "text": "Campaign ID is required"}]}
         
-        # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("accountName"))
-        
-        # Build URL and headers
-        url = build_url(base_url, f"v1/campaigns/{campaign_id}/stats")
-        headers = get_auth_headers(api_key)
-        
-        # Prepare query parameters
-        query_params = {
-            "details": params.get("includeDetails", True)
-        }
-        
-        # Make API call
-        return api_call("GET", url, headers, params=query_params)
+        client = McpApiClient(params.get("accountName"))
+        query_params = {"details": params.get("includeDetails", True)}
+        return client.call(f"/v1/campaigns/{campaign_id}/stats", "GET", query=query_params)
         
     except Exception as e:
-        sys.stderr.write(f"[callhub] Error getting campaign stats: {str(e)}")
+        sys.stderr.write(f"[callhub] Error getting campaign stats: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def duplicate_power_campaign(params: Dict) -> Dict:
+def duplicate_power_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Duplicates an existing PowerCampaign using the dedicated duplicate API.
 
@@ -399,14 +352,7 @@ def duplicate_power_campaign(params: Dict) -> Dict:
         }
 
     try:
-        # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("accountName"))
-
-        # Build URL and headers
-        url = build_url(base_url, "v1/power_campaign/duplicate/")
-        headers = get_auth_headers(api_key, "application/json")
-
-        # Prepare data payload
+        client = McpApiClient(params.get("accountName"))
         data = {
             "campaign_id": params["campaign_id"],
             "phonebook_ids": params["phonebook_ids"],
@@ -414,22 +360,18 @@ def duplicate_power_campaign(params: Dict) -> Dict:
         }
 
         # Add optional parameters
-        optional_fields = [
-            "target_account", "name", "callerid", "callerid_block",
-            "textid", "dialin"
-        ]
+        optional_fields = ["target_account", "name", "callerid", "callerid_block", "textid", "dialin"]
         for field in optional_fields:
             if field in params:
                 data[field] = params[field]
 
-        # Make API call
-        return api_call("POST", url, headers, json_data=data)
-
+        return client.call("/v1/power_campaign/duplicate/", "POST", body=data)
+        
     except Exception as e:
-        sys.stderr.write(f"[callhub] Error duplicating power campaign: {str(e)}")
+        sys.stderr.write(f"[callhub] Error duplicating power campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def get_media_files(params: Dict) -> Dict:
+def get_media_files(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Retrieves a list of media files from the CallHub account.
 
@@ -447,14 +389,7 @@ def get_media_files(params: Dict) -> Dict:
         dict: API response containing the list of media files or an error.
     """
     try:
-        # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("accountName"))
-
-        # Build URL and headers
-        url = build_url(base_url, "v2/media/")
-        headers = get_auth_headers(api_key)
-
-        # Prepare query parameters
+        client = McpApiClient(params.get("accountName"))
         query_params = {}
         if params.get("sort_by"):
             query_params["sort_by"] = params["sort_by"]
@@ -469,14 +404,13 @@ def get_media_files(params: Dict) -> Dict:
         if params.get("exclude_type"):
             query_params["exclude_type"] = params["exclude_type"]
 
-        # Make API call
-        return api_call("GET", url, headers, params=query_params)
-
+        return client.call("/v2/media/", "GET", query=query_params)
+        
     except Exception as e:
-        sys.stderr.write(f"[callhub] Error getting media files: {str(e)}")
+        sys.stderr.write(f"[callhub] Error getting media files: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def add_agents_to_power_campaign(params: Dict) -> Dict:
+def add_agents_to_power_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Add agents to a power campaign.
 
@@ -498,17 +432,21 @@ def add_agents_to_power_campaign(params: Dict) -> Dict:
         return {"isError": True, "content": [{"type": "text", "text": "'agentIds' is required."}]}
 
     try:
-        account_name, api_key, base_url = get_account_config(params.get("accountName"))
-        url = build_url(base_url, f"v1/power_campaign/{campaign_id}/agents/add/")
-        headers = get_auth_headers(api_key, "application/json")
+        client = McpApiClient(params.get("accountName"))
         data = {"agents": agent_ids}
-        return api_call("POST", url, headers, json_data=data)
+        return client.call(f"/v1/power_campaign/{campaign_id}/agents/add/", "POST", body=data)
+        
     except Exception as e:
         sys.stderr.write(f"[callhub] Error adding agents to power campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def export_power_campaign(client: CallHubClient, campaign_id: int):
+def export_power_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Export a power campaign.
     """
-    return client.get(f"v1/power_campaign/{campaign_id}/export/")
+    campaign_id = params.get("campaign_id")
+    if not campaign_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'campaign_id' is required."}]}
+
+    client = McpApiClient(params.get("accountName"))
+    return client.call(f"/v1/power_campaign/{campaign_id}/export/", "GET")

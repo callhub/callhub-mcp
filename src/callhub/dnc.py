@@ -1,9 +1,9 @@
 # File: src/callhub/dnc.py
 
-from .auth import get_account_config
-from .utils import build_url, api_call
+from typing import Dict, Any
+from .client import McpApiClient
 
-def create_dnc_contact(account=None, dnc=None, phone_number=None, category=3):
+def create_dnc_contact(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Create a new DNC contact.
     
@@ -18,31 +18,20 @@ def create_dnc_contact(account=None, dnc=None, phone_number=None, category=3):
     Returns:
         dict: API response containing the created DNC contact information.
     """
-    try:
-        _, api_key, base_url = get_account_config(account)
-    except Exception as e:
-        return {"isError": True, "content": [{"text": str(e)}]}
-    
+    dnc = params.get("dnc")
+    phone_number = params.get("phone_number")
+    category = params.get("category", 3)
+
     if not dnc:
-        return {"isError": True, "content": [{"text": "'dnc' is required. Format: 'https://api.callhub.io/v1/dnc_lists/{id}/'"}]}
-    
+        return {"isError": True, "content": [{"text": "'dnc' is required."}]}
     if not phone_number:
         return {"isError": True, "content": [{"text": "'phone_number' is required."}]}
-    
-    url = build_url(base_url, "v1/dnc_contacts/")
-    headers = {"Authorization": f"Token {api_key}"}
-    
-    data = {
-        "dnc": dnc,
-        "phone_number": phone_number,
-        "category": category
-    }
-    
-    result = api_call("POST", url, headers, data=data)
-    return result
 
+    client = McpApiClient(params.get("account"))
+    data = {"dnc": dnc, "phone_number": phone_number, "category": category}
+    return client.call("/v1/dnc_contacts/", "POST", form_data=data)
 
-def list_dnc_contacts(account=None, page=None, pageSize=None, allPages=False):
+def list_dnc_contacts(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Retrieve a list of DNC contacts with optional pagination.
     
@@ -55,49 +44,36 @@ def list_dnc_contacts(account=None, page=None, pageSize=None, allPages=False):
     Returns:
         dict: API response containing DNC contacts with url, dnc, and phone_number fields.
     """
-    try:
-        _, api_key, base_url = get_account_config(account)
-    except Exception as e:
-        return {"isError": True, "content": [{"text": str(e)}]}
-    
-    url = build_url(base_url, "v1/dnc_contacts/")
-    headers = {"Authorization": f"Token {api_key}"}
-    
-    params = {}
-    if page:
-        params["page"] = page
-    if pageSize:
-        params["page_size"] = pageSize
-    
-    if not allPages:
-        result = api_call("GET", url, headers, params=params)
-        return result
-    
-    # Handle fetching all pages
+    client = McpApiClient(params.get("account"))
+    all_pages = params.get("allPages", False)
+
+    if not all_pages:
+        query_params = {}
+        if params.get("page"):
+            query_params["page"] = params["page"]
+        if params.get("pageSize"):
+            query_params["page_size"] = params["pageSize"]
+        return client.call("/v1/dnc_contacts/", "GET", query=query_params)
+
     all_results = []
     current_page = 1
-    
     while True:
-        params["page"] = current_page
-        result = api_call("GET", url, headers, params=params)
+        query_params = {"page": current_page}
+        if params.get("pageSize"):
+            query_params["page_size"] = params["pageSize"]
         
-        if "isError" in result:
+        result = client.call("/v1/dnc_contacts/", "GET", query=query_params)
+        if result.get("isError"):
             return result
         
-        if "results" in result:
-            all_results.extend(result["results"])
-            
-            if not result.get("next"):
-                break
-            
-            current_page += 1
-        else:
+        all_results.extend(result.get("results", []))
+        if not result.get("next"):
             break
+        current_page += 1
     
     return {"count": len(all_results), "results": all_results}
 
-
-def update_dnc_contact(account=None, contactId=None, dnc=None, phone_number=None):
+def update_dnc_contact(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Update an existing DNC contact by ID.
     
@@ -115,33 +91,22 @@ def update_dnc_contact(account=None, contactId=None, dnc=None, phone_number=None
         Both 'dnc' and 'phone_number' fields are required by the CallHub API.
         Omitting either field will result in a 400 Bad Request error.
     """
-    try:
-        _, api_key, base_url = get_account_config(account)
-    except Exception as e:
-        return {"isError": True, "content": [{"text": str(e)}]}
-    
-    if not contactId:
+    contact_id = params.get("contactId")
+    dnc = params.get("dnc")
+    phone_number = params.get("phone_number")
+
+    if not contact_id:
         return {"isError": True, "content": [{"text": "'contactId' is required."}]}
-    
     if not dnc:
-        return {"isError": True, "content": [{"text": "'dnc' is required. Format: 'https://api.callhub.io/v1/dnc_lists/{id}/'"}]}
-    
+        return {"isError": True, "content": [{"text": "'dnc' is required."}]}
     if not phone_number:
         return {"isError": True, "content": [{"text": "'phone_number' is required."}]}
-    
-    url = build_url(base_url, "v1/dnc_contacts/{}/", contactId)
-    headers = {"Authorization": f"Token {api_key}"}
-    
-    data = {
-        "dnc": dnc,
-        "phone_number": phone_number
-    }
-    
-    result = api_call("PUT", url, headers, data=data)
-    return result
 
+    client = McpApiClient(params.get("account"))
+    data = {"dnc": dnc, "phone_number": phone_number}
+    return client.call(f"/v1/dnc_contacts/{contact_id}/", "PUT", form_data=data)
 
-def delete_dnc_contact(account=None, contactId=None):
+def delete_dnc_contact(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Delete a DNC contact by ID.
     
@@ -152,22 +117,14 @@ def delete_dnc_contact(account=None, contactId=None):
     Returns:
         dict: API response indicating success or failure.
     """
-    try:
-        _, api_key, base_url = get_account_config(account)
-    except Exception as e:
-        return {"isError": True, "content": [{"text": str(e)}]}
-    
-    if not contactId:
+    contact_id = params.get("contactId")
+    if not contact_id:
         return {"isError": True, "content": [{"text": "'contactId' is required."}]}
-    
-    url = build_url(base_url, "v1/dnc_contacts/{}/", contactId)
-    headers = {"Authorization": f"Token {api_key}"}
-    
-    result = api_call("DELETE", url, headers)
-    return result
 
+    client = McpApiClient(params.get("account"))
+    return client.call(f"/v1/dnc_contacts/{contact_id}/", "DELETE")
 
-def create_dnc_list(account=None, name=None):
+def create_dnc_list(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Create a new DNC list.
     
@@ -178,24 +135,15 @@ def create_dnc_list(account=None, name=None):
     Returns:
         dict: API response containing the created DNC list information.
     """
-    try:
-        _, api_key, base_url = get_account_config(account)
-    except Exception as e:
-        return {"isError": True, "content": [{"text": str(e)}]}
-    
+    name = params.get("name")
     if not name:
         return {"isError": True, "content": [{"text": "'name' is required."}]}
-    
-    url = build_url(base_url, "v1/dnc_lists/")
-    headers = {"Authorization": f"Token {api_key}"}
-    
+
+    client = McpApiClient(params.get("account"))
     data = {"name": name}
-    
-    result = api_call("POST", url, headers, data=data)
-    return result
+    return client.call("/v1/dnc_lists/", "POST", form_data=data)
 
-
-def list_dnc_lists(account=None, page=None, pageSize=None, allPages=False):
+def list_dnc_lists(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Retrieve a list of DNC lists with optional pagination.
     
@@ -208,49 +156,36 @@ def list_dnc_lists(account=None, page=None, pageSize=None, allPages=False):
     Returns:
         dict: API response containing DNC lists with url, owner, and name fields.
     """
-    try:
-        _, api_key, base_url = get_account_config(account)
-    except Exception as e:
-        return {"isError": True, "content": [{"text": str(e)}]}
-    
-    url = build_url(base_url, "v1/dnc_lists/")
-    headers = {"Authorization": f"Token {api_key}"}
-    
-    params = {}
-    if page:
-        params["page"] = page
-    if pageSize:
-        params["page_size"] = pageSize
-    
-    if not allPages:
-        result = api_call("GET", url, headers, params=params)
-        return result
-    
-    # Handle fetching all pages
+    client = McpApiClient(params.get("account"))
+    all_pages = params.get("allPages", False)
+
+    if not all_pages:
+        query_params = {}
+        if params.get("page"):
+            query_params["page"] = params["page"]
+        if params.get("pageSize"):
+            query_params["page_size"] = params["pageSize"]
+        return client.call("/v1/dnc_lists/", "GET", query=query_params)
+
     all_results = []
     current_page = 1
-    
     while True:
-        params["page"] = current_page
-        result = api_call("GET", url, headers, params=params)
-        
-        if "isError" in result:
+        query_params = {"page": current_page}
+        if params.get("pageSize"):
+            query_params["page_size"] = params["pageSize"]
+
+        result = client.call("/v1/dnc_lists/", "GET", query=query_params)
+        if result.get("isError"):
             return result
         
-        if "results" in result:
-            all_results.extend(result["results"])
-            
-            if not result.get("next"):
-                break
-            
-            current_page += 1
-        else:
+        all_results.extend(result.get("results", []))
+        if not result.get("next"):
             break
+        current_page += 1
     
     return {"count": len(all_results), "results": all_results}
 
-
-def update_dnc_list(account=None, listId=None, name=None):
+def update_dnc_list(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Update an existing DNC list by ID.
     
@@ -262,27 +197,19 @@ def update_dnc_list(account=None, listId=None, name=None):
     Returns:
         dict: API response containing the updated DNC list information.
     """
-    try:
-        _, api_key, base_url = get_account_config(account)
-    except Exception as e:
-        return {"isError": True, "content": [{"text": str(e)}]}
-    
-    if not listId:
+    list_id = params.get("listId")
+    name = params.get("name")
+
+    if not list_id:
         return {"isError": True, "content": [{"text": "'listId' is required."}]}
-    
     if not name:
         return {"isError": True, "content": [{"text": "'name' is required."}]}
-    
-    url = build_url(base_url, "v1/dnc_lists/{}/", listId)
-    headers = {"Authorization": f"Token {api_key}"}
-    
+
+    client = McpApiClient(params.get("account"))
     data = {"name": name}
-    
-    result = api_call("PUT", url, headers, data=data)
-    return result
+    return client.call(f"/v1/dnc_lists/{list_id}/", "PUT", form_data=data)
 
-
-def delete_dnc_list(account=None, listId=None):
+def delete_dnc_list(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Delete a DNC list by ID.
     
@@ -293,16 +220,9 @@ def delete_dnc_list(account=None, listId=None):
     Returns:
         dict: API response indicating success or failure.
     """
-    try:
-        _, api_key, base_url = get_account_config(account)
-    except Exception as e:
-        return {"isError": True, "content": [{"text": str(e)}]}
-    
-    if not listId:
+    list_id = params.get("listId")
+    if not list_id:
         return {"isError": True, "content": [{"text": "'listId' is required."}]}
-    
-    url = build_url(base_url, "v1/dnc_lists/{}/", listId)
-    headers = {"Authorization": f"Token {api_key}"}
-    
-    result = api_call("DELETE", url, headers)
-    return result
+
+    client = McpApiClient(params.get("account"))
+    return client.call(f"/v1/dnc_lists/{list_id}/", "DELETE")

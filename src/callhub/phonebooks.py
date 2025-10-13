@@ -4,12 +4,11 @@ Phonebook management functions for CallHub API.
 """
 
 import sys
-from typing import Dict, List, Union, Optional, Any
+from typing import Dict, Any, List
 
-from .auth import get_account_config
-from .utils import build_url, api_call, get_auth_headers
+from .client import McpApiClient
 
-def list_phonebooks(params: dict) -> dict:
+def list_phonebooks(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     List phonebooks with optional pagination.
     
@@ -22,20 +21,15 @@ def list_phonebooks(params: dict) -> dict:
     Returns:
         Dictionary with phonebook results
     """
-    account_name = params.get("accountName")
-    _, api_key, base_url = get_account_config(account_name)
-
-    headers = get_auth_headers(api_key)
+    client = McpApiClient(params.get("accountName"))
     query = {}
     if params.get("page"):
         query["page"] = params["page"]
     if params.get("pageSize"):
         query["page_size"] = params["pageSize"]
+    return client.call("/v1/phonebooks/", "GET", query=query)
 
-    url = build_url(base_url, "v1/phonebooks/")
-    return api_call("GET", url, headers, params=query)
-
-def get_phonebook(params: dict) -> dict:
+def get_phonebook(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Retrieve a single phonebook by ID.
     
@@ -47,19 +41,14 @@ def get_phonebook(params: dict) -> dict:
     Returns:
         Dictionary with phonebook details
     """
-    account_name = params.get("accountName")
-    _, api_key, base_url = get_account_config(account_name)
-
     pb_id = params.get("phonebookId")
     if not pb_id:
-        raise ValueError("'phonebookId' is required.")
+        return {"isError": True, "content": [{"type": "text", "text": "'phonebookId' is required."}]}
 
-    headers = get_auth_headers(api_key)
-    url = build_url(base_url, "v1/phonebooks/{}/", pb_id)
-    
-    return api_call("GET", url, headers)
+    client = McpApiClient(params.get("accountName"))
+    return client.call(f"/v1/phonebooks/{pb_id}/", "GET")
 
-def create_phonebook(params: dict) -> dict:
+def create_phonebook(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Create a new phonebook.
     
@@ -72,22 +61,14 @@ def create_phonebook(params: dict) -> dict:
     Returns:
         Dictionary with created phonebook details
     """
-    account_name = params.pop("accountName", None)
-    _, api_key, base_url = get_account_config(account_name)
-
-    # Ensure name is provided
     if "name" not in params:
-        raise ValueError("'name' field is required to create a phonebook")
+        return {"isError": True, "content": [{"type": "text", "text": "'name' field is required."}]}
 
-    # Debug output to help troubleshoot
     sys.stderr.write(f"[callhub] Creating phonebook with params: {params}\n")
+    client = McpApiClient(params.pop("accountName", None))
+    return client.call("/v1/phonebooks/", "POST", form_data=params)
 
-    headers = get_auth_headers(api_key, "application/x-www-form-urlencoded")
-    url = build_url(base_url, "v1/phonebooks/")
-    
-    return api_call("POST", url, headers, data=params)
-
-def update_phonebook(params: dict) -> dict:
+def update_phonebook(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Update an existing phonebook by ID.
     
@@ -101,38 +82,15 @@ def update_phonebook(params: dict) -> dict:
     Returns:
         Dictionary with updated phonebook details
     """
-    account_name = params.pop("accountName", None)
-    _, api_key, base_url = get_account_config(account_name)
-
     pb_id = params.pop("phonebookId", None)
     if not pb_id:
-        raise ValueError("'phonebookId' is required.")
+        return {"isError": True, "content": [{"type": "text", "text": "'phonebookId' is required."}]}
 
-    # Debug output to help troubleshoot
     sys.stderr.write(f"[callhub] Updating phonebook {pb_id} with params: {params}\n")
+    client = McpApiClient(params.pop("accountName", None))
+    return client.call(f"/v1/phonebooks/{pb_id}/", "PATCH", form_data=params)
 
-    headers = get_auth_headers(api_key, "application/x-www-form-urlencoded")
-    url = build_url(base_url, "v1/phonebooks/{}/", pb_id)
-    
-    # Store the original phonebook data to verify changes
-    try:
-        original_pb = get_phonebook({"accountName": account_name, "phonebookId": pb_id})
-    except:
-        original_pb = None
-    
-    # Use the API call helper
-    result = api_call("PATCH", url, headers, data=params)
-    
-    # Verify changes if we have the original data
-    if original_pb and "isError" not in result and not isinstance(result, dict):
-        for key, value in params.items():
-            if key in result and result.get(key) != value:
-                sys.stderr.write(f"[callhub] Warning: Field '{key}' may not have updated correctly\n")
-                sys.stderr.write(f"[callhub] Expected: {value}, Got: {result.get(key)}\n")
-    
-    return result
-
-def delete_phonebook(params: dict) -> dict:
+def delete_phonebook(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Delete a phonebook by ID.
     
@@ -144,24 +102,18 @@ def delete_phonebook(params: dict) -> dict:
     Returns:
         Dictionary with deletion status
     """
-    account_name = params.get("accountName")
-    _, api_key, base_url = get_account_config(account_name)
-
     pb_id = params.get("phonebookId")
     if not pb_id:
-        raise ValueError("'phonebookId' is required.")
+        return {"isError": True, "content": [{"type": "text", "text": "'phonebookId' is required."}]}
 
-    headers = get_auth_headers(api_key)
-    url = build_url(base_url, "v1/phonebooks/{}/", pb_id)
+    client = McpApiClient(params.get("accountName"))
+    result = client.call(f"/v1/phonebooks/{pb_id}/", "DELETE")
     
-    result = api_call("DELETE", url, headers)
-    
-    # If successful, return a standardized response
-    if "isError" not in result:
+    if not result.get("isError"):
         return {"deleted": True, "phonebookId": pb_id}
     return result
 
-def add_contacts_to_phonebook(params: dict) -> dict:
+def add_contacts_to_phonebook(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Add existing contacts to a phonebook.
     
@@ -174,34 +126,19 @@ def add_contacts_to_phonebook(params: dict) -> dict:
     Returns:
         Dictionary with operation status
     """
-    account_name = params.get("accountName")
-    _, api_key, base_url = get_account_config(account_name)
-
     pb_id = params.get("phonebookId")
     contact_ids = params.get("contactIds")
     if not pb_id or contact_ids is None:
-        raise ValueError("Both 'phonebookId' and 'contactIds' are required.")
+        return {"isError": True, "content": [{"type": "text", "text": "Both 'phonebookId' and 'contactIds' are required."}]}
 
-    # Ensure all contact IDs are strings
     contact_ids_str = [str(cid) for cid in contact_ids]
-
-    # Debug output to help troubleshoot
     sys.stderr.write(f"[callhub] Adding contacts {contact_ids_str} to phonebook {pb_id}\n")
 
-    headers = get_auth_headers(api_key)
+    client = McpApiClient(params.get("accountName"))
     body = {"contact_ids": contact_ids_str}
-    url = build_url(base_url, "v1/phonebooks/{}/contacts/", pb_id)
+    return client.call(f"/v1/phonebooks/{pb_id}/contacts/", "POST", body=body)
 
-    # Use the API call helper function
-    result = api_call("POST", url, headers, json_data=body)
-    
-    # If successful but the API returned a generic success response, provide more context
-    if "success" in result and result.get("success") == True:
-        result["message"] = f"Added {len(contact_ids_str)} contacts to phonebook {pb_id}"
-        
-    return result
-
-def remove_contact_from_phonebook(params: dict) -> dict:
+def remove_contact_from_phonebook(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Remove a contact from a phonebook.
     
@@ -214,34 +151,22 @@ def remove_contact_from_phonebook(params: dict) -> dict:
     Returns:
         Dictionary with operation status
     """
-    account_name = params.get("accountName")
-    _, api_key, base_url = get_account_config(account_name)
-
     pb_id = params.get("phonebookId")
     cid = params.get("contactId")
     if not pb_id or not cid:
-        raise ValueError("Both 'phonebookId' and 'contactId' are required.")
+        return {"isError": True, "content": [{"type": "text", "text": "Both 'phonebookId' and 'contactId' are required."}]}
 
-    # Ensure contact ID is a string
-    cid_str = str(cid)
+    client = McpApiClient(params.get("accountName"))
+    body = {"contact_ids": [str(cid)]}
+    result = client.call(f"/v1/phonebooks/{pb_id}/contacts/", "DELETE", body=body)
     
-    headers = get_auth_headers(api_key)
-    body = {"contact_ids": [cid_str]}
-    url = build_url(base_url, "v1/phonebooks/{}/contacts/", pb_id)
-
-    # Use the API call helper
-    result = api_call("DELETE", url, headers, json_data=body)
-    
-    # If successful, return a standardized response
-    if "isError" not in result:
-        # Check phonebook to verify contact was removed
+    if not result.get("isError"):
         try:
             # Get the phonebook count before and after
-            count_before = get_phonebook_count({"accountName": account_name, "phonebookId": pb_id})
-            
+            count_before = get_phonebook_count({"accountName": params.get("accountName"), "phonebookId": pb_id})
+
             # Verify contact was removed by searching for it in the phonebook
             # (This would require additional code to check specific contacts in a phonebook)
-            
             return {"removed": True, "phonebookId": pb_id, "contactId": cid}
         except Exception as e:
             sys.stderr.write(f"[callhub] Warning: Unable to verify contact removal: {str(e)}\n")
@@ -249,7 +174,7 @@ def remove_contact_from_phonebook(params: dict) -> dict:
     
     return result
 
-def get_phonebook_count(params: dict) -> dict:
+def get_phonebook_count(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Get the total number of contacts in a phonebook.
     
@@ -261,19 +186,14 @@ def get_phonebook_count(params: dict) -> dict:
     Returns:
         Dictionary with contact counts
     """
-    account_name = params.get("accountName")
-    _, api_key, base_url = get_account_config(account_name)
-
     pb_id = params.get("phonebookId")
     if not pb_id:
-        raise ValueError("'phonebookId' is required.")
+        return {"isError": True, "content": [{"type": "text", "text": "'phonebookId' is required."}]}
 
-    headers = get_auth_headers(api_key)
-    url = build_url(base_url, "v1/phonebooks/{}/numbers_count/", pb_id)
-    
-    return api_call("GET", url, headers)
+    client = McpApiClient(params.get("accountName"))
+    return client.call(f"/v1/phonebooks/{pb_id}/numbers_count/", "GET")
 
-def get_phonebook_contacts(params: dict) -> dict:
+def get_phonebook_contacts(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Get contacts in a specific phonebook with pagination.
     
@@ -288,40 +208,35 @@ def get_phonebook_contacts(params: dict) -> dict:
     Returns:
         Dictionary with contacts in the phonebook
     """
-    account_name = params.get("accountName")
-    _, api_key, base_url = get_account_config(account_name)
-
     pb_id = params.get("phonebookId")
     if not pb_id:
-        raise ValueError("'phonebookId' is required.")
-        
-    headers = get_auth_headers(api_key)
-    
-    results = []
-    page = params.get("page", 1)
-    page_size = params.get("pageSize")
+        return {"isError": True, "content": [{"type": "text", "text": "'phonebookId' is required."}]}
+
+    client = McpApiClient(params.get("accountName"))
     all_pages = params.get("allPages", False)
-    
+
+    if not all_pages:
+        query = {}
+        if params.get("page"):
+            query["page"] = params["page"]
+        if params.get("pageSize"):
+            query["page_size"] = params["pageSize"]
+        return client.call(f"/v1/phonebooks/{pb_id}/contacts/", "GET", query=query)
+
+    results = []
+    page = 1
     while True:
         query = {"page": page}
-        if page_size:
-            query["page_size"] = page_size
-            
-        # The correct endpoint is /contacts/ not /get_contacts/
-        url = build_url(base_url, "v1/phonebooks/{}/contacts/", pb_id)
-        result = api_call("GET", url, headers, params=query)
+        if params.get("pageSize"):
+            query["page_size"] = params["pageSize"]
         
-        if "isError" in result:
+        result = client.call(f"/v1/phonebooks/{pb_id}/contacts/", "GET", query=query)
+        if result.get("isError"):
             return result
-            
-        data = result
         
-        if all_pages:
-            results.extend(data.get("results", []))
-            if not data.get("next"):
-                break
-            page += 1
-        else:
-            return data
+        results.extend(result.get("results", []))
+        if not result.get("next"):
+            break
+        page += 1
             
     return {"results": results}

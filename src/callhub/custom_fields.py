@@ -3,14 +3,13 @@
 Custom fields management functions for CallHub API.
 """
 
-import json
 import sys
-from typing import Dict, List, Union, Optional, Any
+import json
+from typing import Dict, Any
 
-from .auth import get_account_config
-from .utils import build_url, api_call, get_auth_headers
+from .client import McpApiClient
 
-def list_custom_fields(params: dict) -> dict:
+def list_custom_fields(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     List all custom fields for the account.
     
@@ -23,26 +22,24 @@ def list_custom_fields(params: dict) -> dict:
     Returns:
         Dictionary with custom field results
     """
-    account_name = params.get("accountName")
-    _, api_key, base_url = get_account_config(account_name)
-
-    headers = get_auth_headers(api_key)
+    client = McpApiClient(params.get("accountName"))
     query = {}
     if params.get("page"):
         query["page"] = params["page"]
     if params.get("pageSize"):
         query["page_size"] = params["pageSize"]
 
-    url = build_url(base_url, "v1/custom_fields/")
-    result = api_call("GET", url, headers, params=query)
+    result = client.call("/v1/custom_fields/", "GET", query=query)
     
-    # Handle the unusual response format where multiple JSON objects are concatenated
-    if isinstance(result, str):
+    if result.get("isError"):
+        return result
+
+    # Handle non-standard concatenated JSON response
+    if "results" not in result and "message" in result:
         try:
             # Split the string by "}{", then fix each item to be valid JSON
-            parts = result.split("}{") 
+            parts = result["message"].split("}{")
             json_objects = []
-            
             for i, part in enumerate(parts):
                 # Add closing brace to all except last part
                 if i < len(parts) - 1 and not part.endswith("}"):
@@ -54,15 +51,11 @@ def list_custom_fields(params: dict) -> dict:
                 try:
                     obj = json.loads(part)
                     json_objects.append(obj)
-                except json.JSONDecodeError:
-                    sys.stderr.write(f"[callhub] Failed to parse JSON part: {part}\n")
-            
+                except json.JSONDecodeError as e:
+                    sys.stderr.write(f"[callhub] Failed to parse JSON part: {part}: {e}\n")
+
             # Return a standard format with results array
-            return {
-                "count": len(json_objects),
-                "results": json_objects
-            }
-            
+            return {"count": len(json_objects), "results": json_objects}
         except Exception as e:
             sys.stderr.write(f"[callhub] Error processing custom fields response: {str(e)}\n")
             # Return original response on error
@@ -71,46 +64,35 @@ def list_custom_fields(params: dict) -> dict:
     # If not a string or parsing failed, return the original result
     return result
 
-def get_custom_field(params: dict) -> dict:
+def get_custom_field(params: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Retrieve a single custom field by name and field_type.
-    
+    Retrieve a single custom field by ID or by name and type.
+
     Args:
         params: Dictionary with:
             - accountName (optional): The account to use
             - customFieldId: ID of the custom field to retrieve
             - name (alternative): Name of the custom field
             - field_type (if using name): Type of field (1: "Text", 2: "Number", 3: "Boolean", 4: "Multi-choice")
-            
+
     Returns:
         Dictionary with custom field details
     """
-    account_name = params.get("accountName")
-    _, api_key, base_url = get_account_config(account_name)
-
+    client = McpApiClient(params.get("accountName"))
     field_id = params.get("customFieldId")
     name = params.get("name")
     field_type = params.get("field_type")
     
-    # Per API docs, need to provide name and field_type, not just ID
     if not field_id and not (name and field_type):
-        raise ValueError("Either 'customFieldId' or both 'name' and 'field_type' are required.")
+        return {"isError": True, "content": [{"type": "text", "text": "Either 'customFieldId' or both 'name' and 'field_type' are required."}]}
 
-    headers = get_auth_headers(api_key)
-    
     if field_id:
-        # Try using the ID directly
-        url = build_url(base_url, "v1/custom_fields/{}/", field_id)
-        return api_call("GET", url, headers)
+        return client.call(f"/v1/custom_fields/{field_id}/", "GET")
     else:
-        # Use name and field_type as path parameters
-        url = build_url(base_url, "v1/custom_fields/")
-        # Add as query parameters
         query_params = {"name": name, "field_type": field_type}
-        return api_call("GET", url, headers, params=query_params)
+        return client.call("/v1/custom_fields/", "GET", query=query_params)
 
-
-def create_custom_field(params: dict) -> dict:
+def create_custom_field(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Create a new custom field.
     
@@ -124,119 +106,74 @@ def create_custom_field(params: dict) -> dict:
     Returns:
         Dictionary with created custom field details
     """
-    account_name = params.pop("accountName", None)
-    _, api_key, base_url = get_account_config(account_name)
-
-    # Ensure required fields are provided
     if "name" not in params:
-        raise ValueError("'name' field is required to create a custom field")
+        return {"isError": True, "content": [{"type": "text", "text": "'name' field is required."}]}
     if "field_type" not in params:
-        raise ValueError("'field_type' is required to create a custom field")
+        return {"isError": True, "content": [{"type": "text", "text": "'field_type' is required."}]}
 
-    # Prepare the request data
-    request_data = {
-        "name": params["name"],
-        "field_type": params["field_type"]
-    }
+    client = McpApiClient(params.get("accountName"))
+    request_data = {"name": params["name"], "field_type": params["field_type"]}
     
-    # Add choice array for Multi-choice type fields
     if params["field_type"] == "Multi-choice" and "choices" in params:
         request_data["choice"] = params["choices"]
 
-    # Debug output to help troubleshoot
     sys.stderr.write(f"[callhub] Creating custom field with params: {request_data}\n")
+    return client.call("/v1/custom_fields/", "POST", body=request_data)
 
-    headers = get_auth_headers(api_key)
-    url = build_url(base_url, "v1/custom_fields/")
-    
-    return api_call("POST", url, headers, json_data=request_data)
-
-def update_custom_field(params: dict) -> dict:
+def update_custom_field(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Update an existing custom field by ID.
-    
-    Args:
-        params: Dictionary with:
-            - accountName (optional): The account to use
-            - customFieldId: ID of the custom field to update
-            - name (optional): New name for the custom field
-            - options (optional): For "select" type, a list of options
-            
-    Returns:
-        Dictionary with updated custom field details
     """
-    account_name = params.pop("accountName", None)
-    _, api_key, base_url = get_account_config(account_name)
-
-    field_id = params.pop("customFieldId", None)
+    field_id = params.get("customFieldId")
     if not field_id:
-        raise ValueError("'customFieldId' is required.")
+        return {"isError": True, "content": [{"type": "text", "text": "'customFieldId' is required."}]}
 
+    client = McpApiClient(params.get("accountName"))
     update_data = {}
     if "name" in params:
         update_data["name"] = params["name"]
     if "options" in params:
         update_data["options"] = params["options"]
 
-    # Debug output to help troubleshoot
     sys.stderr.write(f"[callhub] Updating custom field {field_id} with params: {update_data}\n")
+    return client.call(f"/v1/custom_fields/{field_id}/", "PUT", body=update_data)
 
-    headers = get_auth_headers(api_key)
-    url = build_url(base_url, "v1/custom_fields/{}/", field_id)
-    
-    # API docs say to use PUT, not PATCH
-    return api_call("PUT", url, headers, json_data=update_data)
-
-
-def delete_custom_field(params: dict) -> dict:
+def delete_custom_field(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Delete a custom field by ID.
-    
-    Args:
-        params: Dictionary with:
-            - accountName (optional): The account to use
-            - customFieldId: ID of the custom field to delete
-            
-    Returns:
-        Dictionary with deletion status
     """
-    account_name = params.get("accountName")
-    _, api_key, base_url = get_account_config(account_name)
-
     field_id = params.get("customFieldId")
     if not field_id:
-        raise ValueError("'customFieldId' is required.")
+        return {"isError": True, "content": [{"type": "text", "text": "'customFieldId' is required."}]}
 
-    headers = get_auth_headers(api_key)
-    url = build_url(base_url, "v1/custom_fields/{}/", field_id)
+    client = McpApiClient(params.get("accountName"))
+    result = client.call(f"/v1/custom_fields/{field_id}/", "DELETE")
     
-    result = api_call("DELETE", url, headers)
-    
-    # If successful, return a standardized response
-    if "isError" not in result:
+    if not result.get("isError"):
         return {"deleted": True, "customFieldId": field_id}
     return result
 
-def get_custom_field_info(account_name, custom_field_id):
+def get_custom_field_info(params: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Get custom field information by using list_custom_fields and filtering.
-    
+    Get custom field information by filtering all custom fields.
+    .
+
     Args:
         account_name (str): The account to use
         custom_field_id (str): ID of the custom field to retrieve
-        
+
     Returns:
         dict: The custom field information or error response
     """
-    _, api_key, base_url = get_account_config(account_name)
-    headers = get_auth_headers(api_key)
-    
+    custom_field_id = params.get("customFieldId")
+    if not custom_field_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'customFieldId' is required."}]}
+
+    list_params = {"accountName": params.get("accountName")}
     # Call the list_custom_fields endpoint
-    url = build_url(base_url, "v1/custom_fields/")
-    result = api_call("GET", url, headers)
+    result = list_custom_fields(list_params)
     
-    # Handle the response
-    if isinstance(result, dict) and result.get("isError"):
+    if result.get("isError"):
         return result
     
     # Handle string response (concatenated JSON objects)
@@ -244,7 +181,7 @@ def get_custom_field_info(account_name, custom_field_id):
         sys.stderr.write(f"[callhub] Got a string response: {result[:100]}...\n")
         try:
             # Split the string by "}{"
-            parts = result.split("}{") 
+            parts = result.split("}{")
             sys.stderr.write(f"[callhub] Split into {len(parts)} parts\n")
             
             for i, part in enumerate(parts):
@@ -273,11 +210,13 @@ def get_custom_field_info(account_name, custom_field_id):
             sys.stderr.write(f"[callhub] Error parsing custom fields: {str(e)}\n")
             return {"isError": True, "content": [{"type": "text", "text": f"Error processing custom fields: {str(e)}"}]}
     
-    # If we get here, we didn't find the field
+    for field in result.get("results", []):
+        if str(field.get("id")) == str(custom_field_id):
+            return field
+    
     return {"isError": True, "content": [{"type": "text", "text": f"Custom field with ID {custom_field_id} not found"}]}
 
-
-def update_contact_custom_field(params: dict) -> dict:
+def update_contact_custom_field(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Update a custom field value for a specific contact.
     
@@ -291,63 +230,54 @@ def update_contact_custom_field(params: dict) -> dict:
     Returns:
         Dictionary with operation status
     """
-    account_name = params.get("accountName")
-    _, api_key, base_url = get_account_config(account_name)
-
     contact_id = params.get("contactId")
     field_id = params.get("customFieldId")
     value = params.get("value")
     
     if not contact_id or not field_id:
-        raise ValueError("Both 'contactId' and 'customFieldId' are required.")
-        
+        return {"isError": True, "content": [{"type": "text", "text": "Both 'contactId' and 'customFieldId' are required."}]}
     # Value can be None to clear the field, but must be provided as a parameter
     if "value" not in params:
-        raise ValueError("'value' parameter is required (can be null to clear the field).")
+        return {"isError": True, "content": [{"type": "text", "text": "'value' parameter is required."}]}
 
-    headers = get_auth_headers(api_key)
-    
+    client = McpApiClient(params.get("accountName"))
+
     # First, get the contact to get the current data and the field name
-    contact_url = build_url(base_url, "v1/contacts/{}/", contact_id)
-    contact_result = api_call("GET", contact_url, headers)
-    
-    if "isError" in contact_result:
+    contact_result = client.call(f"/v1/contacts/{contact_id}/", "GET")
+    if contact_result.get("isError"):
         return contact_result
         
+    field_info_params = {"accountName": params.get("accountName"), "customFieldId": field_id}
     # Use our new helper function instead of direct getCustomField
-    custom_field = get_custom_field_info(account_name, field_id)
-    
-    if "isError" in custom_field:
+    custom_field = get_custom_field_info(field_info_params)
+    if custom_field.get("isError"):
         return custom_field
     
     # Extract the field name
     field_name = custom_field.get("name")
     if not field_name:
         return {"isError": True, "content": [{"type": "text", "text": f"Custom field with ID {field_id} has no name"}]}
-    
+
     # Now we have the field name, update the contact
     # Start with the basic required field - contact phone number
-    update_data = {"contact": contact_result.get("contact")}
-    
     # Add the custom field value
-    update_data[field_name] = value
+    update_data = {"contact": contact_result.get("contact"), field_name: value}
     
     # Debug output
     sys.stderr.write(f"[callhub] Updating contact {contact_id} with custom field '{field_name}' = {value}\n")
-    sys.stderr.write(f"[callhub] Request URL: {contact_url}\n")
+    sys.stderr.write(f"[callhub] Request URL: v1/contacts/{contact_id}/\n")
     sys.stderr.write(f"[callhub] Request payload: {update_data}\n")
-    
+
     # Make the API call to update the contact
-    result = api_call("PUT", contact_url, headers, json_data=update_data)
-    
+    result = client.call(f"/v1/contacts/{contact_id}/", "PUT", body=update_data)
+
     # If successful, standardize the response
-    if "isError" not in result:
+    if not result.get("isError"):
         return {
             "success": True,
-            "message": f"Custom field '{field_name}' (ID: {field_id}) updated for contact {contact_id}",
+            "message": f"Custom field '{field_name}' updated for contact {contact_id}",
             "contactId": contact_id,
             "customFieldId": field_id,
-            "customFieldName": field_name,
             "value": value
         }
     

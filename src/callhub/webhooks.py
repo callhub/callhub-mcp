@@ -4,12 +4,11 @@ Webhook operations for CallHub API.
 """
 
 import sys
-from typing import Dict, List, Union, Optional, Any
+from typing import Dict, Any
 
-from .utils import build_url, api_call, get_auth_headers
-from .auth import get_account_config
+from .client import McpApiClient
 
-def list_webhooks(params: Dict) -> Dict:
+def list_webhooks(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     List all webhooks with optional pagination.
     
@@ -23,28 +22,18 @@ def list_webhooks(params: Dict) -> Dict:
         dict: API response containing webhook data or error information
     """
     try:
-        # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("accountName"))
-        
-        # Build URL and headers
-        url = build_url(base_url, "v1/webhooks/")
-        headers = get_auth_headers(api_key)
-        
-        # Prepare query parameters
+        client = McpApiClient(params.get("accountName"))
         query_params = {}
         if params.get("page") is not None:
             query_params["page"] = params["page"]
         if params.get("pageSize") is not None:
             query_params["page_size"] = params["pageSize"]
-        
-        # Make API call
-        return api_call("GET", url, headers, params=query_params)
-        
+        return client.call("/v1/webhooks/", "GET", query=query_params)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error listing webhooks: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def get_webhook(params: Dict) -> Dict:
+def get_webhook(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Retrieve a single webhook by ID. Since the API doesn't have a dedicated endpoint
     for retrieving a single webhook, this function gets all webhooks and filters them.
@@ -57,17 +46,12 @@ def get_webhook(params: Dict) -> Dict:
     Returns:
         dict: API response containing webhook data or error information
     """
-    # Validate required parameters
-    webhook_id = params.get("webhookId")
-    if not webhook_id:
-        return {"isError": True, "content": [{"type": "text", "text": "'webhookId' is required."}]}
-    
     try:
-        # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("accountName"))
-        
-        # Get all webhooks
-        list_params = {"accountName": account_name}
+        webhook_id = params.get("webhookId")
+        if not webhook_id:
+            return {"isError": True, "content": [{"type": "text", "text": "'webhookId' is required."}]}
+
+        list_params = {"accountName": params.get("accountName")}
         all_webhooks_response = list_webhooks(list_params)
         
         # Check if there was an error getting all webhooks
@@ -92,7 +76,7 @@ def get_webhook(params: Dict) -> Dict:
         sys.stderr.write(f"[callhub] Error getting webhook: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def create_webhook(params: Dict) -> Dict:
+def create_webhook(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Create a new webhook.
     
@@ -105,45 +89,27 @@ def create_webhook(params: Dict) -> Dict:
     Returns:
         dict: API response containing the created webhook data or error information
     """
-    # Validate required parameters
-    event = params.get("event_name") or params.get("event")
-    target = params.get("target_url") or params.get("target")
-    
-    if not event:
-        return {"isError": True, "content": [{"type": "text", "text": "'event' is required."}]}
-    if not target:
-        return {"isError": True, "content": [{"type": "text", "text": "'target' is required."}]}
-    
-    # Validate event type
-    valid_events = ['vb.transfer', 'sb.reply', 'cc.notes', 'agent.activation']
-    if event not in valid_events:
-        return {
-            "isError": True, 
-            "content": [{"type": "text", "text": f"'event' must be one of: {', '.join(valid_events)}"}]
-        }
-    
     try:
-        # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("accountName"))
+        event = params.get("event_name") or params.get("event")
+        target = params.get("target_url") or params.get("target")
         
-        # Build URL and headers - using application/x-www-form-urlencoded since the API example does
-        url = build_url(base_url, "v1/webhooks/")
-        headers = get_auth_headers(api_key, "application/x-www-form-urlencoded")
+        if not event:
+            return {"isError": True, "content": [{"type": "text", "text": "'event' is required."}]}
+        if not target:
+            return {"isError": True, "content": [{"type": "text", "text": "'target' is required."}]}
         
-        # Prepare payload
-        data = {
-            "event": event,  # API expects 'event' and 'target' based on documentation
-            "target": target
-        }
+        valid_events = ['vb.transfer', 'sb.reply', 'cc.notes', 'agent.activation']
+        if event not in valid_events:
+            return {"isError": True, "content": [{"type": "text", "text": f"'event' must be one of: {', '.join(valid_events)}"}]}
         
-        # Make API call - use data parameter for form-encoded
-        return api_call("POST", url, headers, data=data)
-        
+        client = McpApiClient(params.get("accountName"))
+        data = {"event": event, "target": target}
+        return client.call("/v1/webhooks/", "POST", form_data=data)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error creating webhook: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def delete_webhook(params: Dict) -> Dict:
+def delete_webhook(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Delete a webhook by ID.
     
@@ -155,22 +121,14 @@ def delete_webhook(params: Dict) -> Dict:
     Returns:
         dict: API response or error information
     """
-    # Validate required parameters
-    webhook_id = params.get("webhookId")
-    if not webhook_id:
-        return {"isError": True, "content": [{"type": "text", "text": "'webhookId' is required."}]}
-    
     try:
-        # Get account configuration
-        account_name, api_key, base_url = get_account_config(params.get("accountName"))
+        webhook_id = params.get("webhookId")
+        if not webhook_id:
+            return {"isError": True, "content": [{"type": "text", "text": "'webhookId' is required."}]}
         
-        # Build URL and headers
-        url = build_url(base_url, "v1/webhooks/{}/", webhook_id)
-        headers = get_auth_headers(api_key)
-        
-        # Make API call
-        return api_call("DELETE", url, headers)
-        
+        client = McpApiClient(params.get("accountName"))
+        return client.call(f"/v1/webhooks/{webhook_id}/", "DELETE")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error deleting webhook: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
