@@ -8,6 +8,7 @@ import json
 from typing import Dict, Any, List
 
 from .client import McpApiClient
+from .constants import ENDPOINTS
 
 def list_tags(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -28,7 +29,7 @@ def list_tags(params: Dict[str, Any]) -> Dict[str, Any]:
         query["page"] = params["page"]
     if params.get("pageSize"):
         query["page_size"] = params["pageSize"]
-    return client.call("/v1/tags/", "GET", query=query)
+    return client.call(ENDPOINTS.TAGS_V1, "GET", query=query)
 
 def get_tag(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -47,7 +48,7 @@ def get_tag(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'tagId' is required."}]}
 
     client = McpApiClient(params.get("accountName"))
-    return client.call(f"/v1/tags/{tag_id}/", "GET")
+    return client.call(f"{ENDPOINTS.TAGS_V1}{tag_id}/", "GET")
 
 def create_tag(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -67,7 +68,7 @@ def create_tag(params: Dict[str, Any]) -> Dict[str, Any]:
     sys.stderr.write(f"[callhub] Creating tag with params: {params}\n")
     client = McpApiClient(params.get("accountName"))
     request_data = {"tag": params["name"]}
-    return client.call("/v2/tags/", "POST", body=request_data)
+    return client.call(ENDPOINTS.TAGS, "POST", body=request_data)
 
 def update_tag(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -95,7 +96,7 @@ def update_tag(params: Dict[str, Any]) -> Dict[str, Any]:
         update_data["description"] = params["description"]
 
     sys.stderr.write(f"[callhub] Updating tag {tag_id} with params: {update_data}\n")
-    return client.call(f"/v1/tags/{tag_id}/", "PATCH", body=update_data)
+    return client.call(f"{ENDPOINTS.TAGS_V1}{tag_id}/", "PATCH", body=update_data)
 
 def delete_tag(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -114,7 +115,7 @@ def delete_tag(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'tagId' is required."}]}
 
     client = McpApiClient(params.get("accountName"))
-    result = client.call(f"/v1/tags/{tag_id}/", "DELETE")
+    result = client.call(f"{ENDPOINTS.TAGS_V1}{tag_id}/", "DELETE")
     
     if not result.get("isError"):
         return {"deleted": True, "tagId": tag_id}
@@ -143,7 +144,7 @@ def add_tag_to_contact(params: Dict[str, Any]) -> Dict[str, Any]:
 
     client = McpApiClient(params.get("accountName"))
     
-    contact_result = client.call(f"/v1/contacts/{contact_id}/", "GET")
+    contact_result = client.call(f"{ENDPOINTS.CONTACTS_V1}{contact_id}/", "GET")
     if contact_result.get("isError"):
         return contact_result
     
@@ -175,9 +176,9 @@ def add_tag_to_contact(params: Dict[str, Any]) -> Dict[str, Any]:
 
     payload = {"tags": list(all_tag_ids)}
     sys.stderr.write(f"[callhub] Setting tags for contact {contact_id}\n")
-    sys.stderr.write(f"[callhub] Request URL: v2/contacts/{contact_id}/taggings/\n")
+    sys.stderr.write(f"[callhub] Request URL: {ENDPOINTS.CONTACT_TAGGINGS.format(contact_id=contact_id)}\n")
     sys.stderr.write(f"[callhub] Request payload: {json.dumps(payload)}\n")
-    result = client.call(f"/v2/contacts/{contact_id}/taggings/", "PATCH", body=payload)
+    result = client.call(ENDPOINTS.CONTACT_TAGGINGS.format(contact_id=contact_id), "PATCH", body=payload)
     
     if not result.get("isError"):
         return {"success": True, "message": f"Tags successfully set for contact {contact_id}"}
@@ -206,7 +207,7 @@ def remove_tag_from_contact(params: Dict[str, Any]) -> Dict[str, Any]:
 
     sys.stderr.write(f"[callhub] Removing tag {tag_id} from contact {contact_id}\n")
     client = McpApiClient(params.get("accountName"))
-    result = client.call(f"/v1/contacts/{contact_id}/tags/{tag_id}/", "DELETE")
+    result = client.call(f"{ENDPOINTS.CONTACTS_V1}{contact_id}/tags/{tag_id}/", "DELETE")
     
     if not result.get("isError"):
         return {"success": True, "message": f"Tag {tag_id} removed from contact {contact_id}"}

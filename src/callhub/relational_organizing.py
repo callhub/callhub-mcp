@@ -1,5 +1,7 @@
 from typing import Dict, Any
 from .client import McpApiClient
+from .constants import ENDPOINTS
+
 
 def create_relational_organizing_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -7,7 +9,7 @@ def create_relational_organizing_campaign(params: Dict[str, Any]) -> Dict[str, A
     """
     client = McpApiClient(params.get("accountName"))
     # All params are passed as the body
-    return client.call("v1/relational-campaign/", "POST", body=params)
+    return client.call(f"{ENDPOINTS.RELATIONAL_CAMPAIGN}create", "POST", body=params)
 
 def duplicate_relational_organizing_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -17,7 +19,7 @@ def duplicate_relational_organizing_campaign(params: Dict[str, Any]) -> Dict[str
     if not campaign_id:
         return {"isError": True, "content": [{"type": "text", "text": "'campaign_id' is required."}]}
     client = McpApiClient(params.get("accountName"))
-    return client.call(f"v1/relational-campaign/{campaign_id}/duplicate/", "POST")
+    return client.call(f"{ENDPOINTS.RELATIONAL_CAMPAIGN}{campaign_id}/duplicate/", "POST")
 
 def assign_agents_to_relational_organizing_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -32,7 +34,7 @@ def assign_agents_to_relational_organizing_campaign(params: Dict[str, Any]) -> D
         "agent_ids_to_remove": params.get("agent_ids_to_remove", []),
     }
     client = McpApiClient(params.get("accountName"))
-    return client.call(f"v1/relational-campaign/{campaign_id}/agents/", "PUT", body=data)
+    return client.call(f"{ENDPOINTS.RELATIONAL_CAMPAIGN}{campaign_id}/agents/", "PUT", body=data)
 
 def update_relational_organizing_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -44,7 +46,7 @@ def update_relational_organizing_campaign(params: Dict[str, Any]) -> Dict[str, A
     
     client = McpApiClient(params.get("accountName"))
     # All other params are passed as the body
-    return client.call(f"v1/relational-campaign/{campaign_id}/", "PUT", body=params)
+    return client.call(f"{ENDPOINTS.RELATIONAL_CAMPAIGN}{campaign_id}/", "PUT", body=params)
 
 def get_relational_organizing_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -55,7 +57,7 @@ def get_relational_organizing_campaign(params: Dict[str, Any]) -> Dict[str, Any]
         return {"isError": True, "content": [{"type": "text", "text": "'campaign_id' is required."}]}
     
     client = McpApiClient(params.get("accountName"))
-    return client.call(f"v1/relational-campaign/{campaign_id}/", "GET")
+    return client.call(f"{ENDPOINTS.RELATIONAL_CAMPAIGN}{campaign_id}/", "GET")
 
 def update_relational_organizing_campaign_status(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -70,4 +72,4 @@ def update_relational_organizing_campaign_status(params: Dict[str, Any]) -> Dict
 
     data = {"status": status}
     client = McpApiClient(params.get("accountName"))
-    return client.call(f"v1/relational-campaign/{campaign_id}/update-status/", "POST", body=data)
+    return client.call(f"{ENDPOINTS.RELATIONAL_CAMPAIGN}{campaign_id}/update-status/", "POST", body=data)

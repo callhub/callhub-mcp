@@ -9,6 +9,7 @@ This module provides functions for managing questions (PDI/VAN) in CallHub.
 from typing import Dict, Any
 
 from .client import McpApiClient
+from .constants import ENDPOINTS
 
 def list_questions(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -30,7 +31,7 @@ def list_questions(params: Dict[str, Any]) -> Dict[str, Any]:
     if question_type and question_type in ["PDI_QUESTION", "VAN_QUESTION"]:
         query_params["type"] = question_type
     
-    return client.call("/v1/questions/", "GET", query=query_params)
+    return client.call(ENDPOINTS.QUESTIONS, "GET", query=query_params)
 
 def get_question(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -52,4 +53,4 @@ def get_question(params: Dict[str, Any]) -> Dict[str, Any]:
         }
     
     client = McpApiClient(params.get("accountName"))
-    return client.call(f"/v1/questions/{question_id}/", "GET")
+    return client.call(f"{ENDPOINTS.QUESTIONS}{question_id}/", "GET")

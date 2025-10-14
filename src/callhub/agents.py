@@ -6,6 +6,7 @@ Agent management functions for CallHub API.
 import sys
 from typing import Dict, Any
 from .client import McpApiClient
+from .constants import ENDPOINTS
 
 def list_agents(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -16,7 +17,7 @@ def list_agents(params: Dict[str, Any]) -> Dict[str, Any]:
             - accountName (optional): The CallHub account name to use
             - include_pending (optional): Include pending agents (default: False)
             - page (optional): Page number for pagination
-
+    
     Returns:
         Dict: Response from the API with agent list
     """
@@ -32,7 +33,7 @@ def list_agents(params: Dict[str, Any]) -> Dict[str, Any]:
         sys.stderr.write(f"[callhub] list_agents called with page parameter: {page}\n")
         query_params["page"] = page
         
-    return client.call("/v1/agents/", "GET", query=query_params)
+    return client.call(ENDPOINTS.AGENTS, "GET", query=query_params)
 
 def get_agent(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -52,7 +53,7 @@ def get_agent(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'agentId' is required"}]}
     
     client = McpApiClient(params.get("accountName"))
-    return client.call(f"/v1/agents/{agent_id}/", "GET")
+    return client.call(f"{ENDPOINTS.AGENTS}{agent_id}/", "GET")
 
 def create_agent(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -120,7 +121,7 @@ def create_agent(params: Dict[str, Any]) -> Dict[str, Any]:
     
     # Print the payload for debugging
     sys.stderr.write(f"[callhub] Creating agent with payload: {payload}\n")
-    return client.call("/v1/agents/", "POST", body=payload)
+    return client.call(ENDPOINTS.AGENTS, "POST", body=payload)
 
 def get_live_agents(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -134,4 +135,4 @@ def get_live_agents(params: Dict[str, Any]) -> Dict[str, Any]:
         Dict: Response from the API with the list of connected agents
     """
     client = McpApiClient(params.get("accountName"))
-    return client.call("/v2/campaign/agent/live/", "GET")
+    return client.call(ENDPOINTS.CAMPAIGN_AGENT_LIVE, "GET")

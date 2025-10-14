@@ -2,6 +2,7 @@
 from typing import Dict, Any
 
 from .client import McpApiClient
+from .constants import ENDPOINTS
 
 
 def get_shortened_url(params: Dict[str, Any]) -> Dict[str, Any]:
@@ -20,7 +21,7 @@ def get_shortened_url(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'shortCode' is required."}]}
 
     client = McpApiClient(params.get("accountName"))
-    return client.call(f"/v2/shortened-urls/{short_code}/", "GET")
+    return client.call(f"{ENDPOINTS.SHORTENED_URL}{short_code}/", "GET")
 
 
 def list_shortened_urls(params: Dict[str, Any]) -> Dict[str, Any]:
@@ -42,4 +43,4 @@ def list_shortened_urls(params: Dict[str, Any]) -> Dict[str, Any]:
     if params.get("pageSize"):
         query["page_size"] = params["pageSize"]
     
-    return client.call("v2/shortened-urls/", "GET", query=query)
+    return client.call(f"{ENDPOINTS.SHORTENED_URL}", "GET", query=query)

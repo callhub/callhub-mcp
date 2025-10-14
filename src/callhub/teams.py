@@ -6,6 +6,7 @@ Team management functions for CallHub API.
 import sys
 from typing import Dict, Any, Optional
 from .client import McpApiClient
+from .constants import ENDPOINTS
 
 def list_teams(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -19,7 +20,7 @@ def list_teams(params: Dict[str, Any]) -> Dict[str, Any]:
         Dict: Response from the API with team list
     """
     client = McpApiClient(params.get("accountName"))
-    return client.call("/v1/teams/", "GET")
+    return client.call(ENDPOINTS.TEAMS, "GET")
 
 def get_team(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -39,7 +40,7 @@ def get_team(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'teamId' is required"}]}
     
     client = McpApiClient(params.get("accountName"))
-    return client.call(f"/v1/teams/{team_id}/", "GET")
+    return client.call(f"{ENDPOINTS.TEAMS}{team_id}/", "GET")
 
 def create_team(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -61,7 +62,7 @@ def create_team(params: Dict[str, Any]) -> Dict[str, Any]:
     
     client = McpApiClient(params.get("accountName"))
     payload = {"name": name}
-    return client.call("/v1/teams/", "POST", body=payload)
+    return client.call(ENDPOINTS.TEAMS, "POST", body=payload)
 
 def update_team(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -88,7 +89,7 @@ def update_team(params: Dict[str, Any]) -> Dict[str, Any]:
     
     client = McpApiClient(params.get("accountName"))
     payload = {"name": name}
-    return client.call(f"/v1/teams/{team_id}/", "PUT", body=payload)
+    return client.call(f"{ENDPOINTS.TEAMS}{team_id}/", "PUT", body=payload)
 
 def delete_team(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -121,7 +122,7 @@ def delete_team(params: Dict[str, Any]) -> Dict[str, Any]:
         if agent_count > 0:
             sys.stderr.write(f"[callhub] Warning: Team {team_id} has {agent_count} agents that will be unassigned\n")
 
-    delete_response = client.call(f"/v1/teams/{team_id}/", "DELETE")
+    delete_response = client.call(f"{ENDPOINTS.TEAMS}{team_id}/", "DELETE")
     
     # If deletion was successful and there were agents, add warning to response
     if not delete_response.get("isError") and agent_count > 0:
@@ -152,7 +153,7 @@ def get_team_agents(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'teamId' is required"}]}
     
     client = McpApiClient(params.get("accountName"))
-    return client.call(f"/v1/teams/{team_id}/agents/", "GET")
+    return client.call(f"{ENDPOINTS.TEAMS}{team_id}/agents/", "GET")
 
 def get_team_agent_details(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -177,7 +178,7 @@ def get_team_agent_details(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'agentId' is required"}]}
     
     client = McpApiClient(params.get("accountName"))
-    return client.call(f"/v1/teams/{team_id}/agents/{agent_id}/", "GET")
+    return client.call(f"{ENDPOINTS.TEAMS}{team_id}/agents/{agent_id}/", "GET")
 
 def add_agents_to_team(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -203,7 +204,7 @@ def add_agents_to_team(params: Dict[str, Any]) -> Dict[str, Any]:
     
     client = McpApiClient(params.get("accountName"))
     payload = {"agents": [int(agent_id) for agent_id in agent_ids]}
-    return client.call(f"/v1/teams/{team_id}/agents/", "POST", body=payload)
+    return client.call(f"{ENDPOINTS.TEAMS}{team_id}/agents/", "POST", body=payload)
 
 def remove_agents_from_team(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -229,7 +230,7 @@ def remove_agents_from_team(params: Dict[str, Any]) -> Dict[str, Any]:
     
     client = McpApiClient(params.get("accountName"))
     payload = {"agents": [int(agent_id) for agent_id in agent_ids]}
-    return client.call(f"/v1/teams/{team_id}/agents/", "DELETE", body=payload)
+    return client.call(f"{ENDPOINTS.TEAMS}{team_id}/agents/", "DELETE", body=payload)
 
 # Team validation helper function (for agent creation validation)
 def validate_team_exists(account_name: Optional[str], team_input: str) -> Dict[str, Any]:

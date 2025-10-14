@@ -2,6 +2,7 @@
 
 from typing import Dict, Any
 from .client import McpApiClient
+from .constants import ENDPOINTS
 
 def create_dnc_contact(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -29,7 +30,7 @@ def create_dnc_contact(params: Dict[str, Any]) -> Dict[str, Any]:
 
     client = McpApiClient(params.get("account"))
     data = {"dnc": dnc, "phone_number": phone_number, "category": category}
-    return client.call("/v1/dnc_contacts/", "POST", form_data=data)
+    return client.call(ENDPOINTS.DNC_CONTACTS, "POST", form_data=data)
 
 def list_dnc_contacts(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -53,7 +54,7 @@ def list_dnc_contacts(params: Dict[str, Any]) -> Dict[str, Any]:
             query_params["page"] = params["page"]
         if params.get("pageSize"):
             query_params["page_size"] = params["pageSize"]
-        return client.call("/v1/dnc_contacts/", "GET", query=query_params)
+        return client.call(ENDPOINTS.DNC_CONTACTS, "GET", query=query_params)
 
     all_results = []
     current_page = 1
@@ -62,7 +63,7 @@ def list_dnc_contacts(params: Dict[str, Any]) -> Dict[str, Any]:
         if params.get("pageSize"):
             query_params["page_size"] = params["pageSize"]
         
-        result = client.call("/v1/dnc_contacts/", "GET", query=query_params)
+        result = client.call(ENDPOINTS.DNC_CONTACTS, "GET", query=query_params)
         if result.get("isError"):
             return result
         
@@ -104,7 +105,7 @@ def update_dnc_contact(params: Dict[str, Any]) -> Dict[str, Any]:
 
     client = McpApiClient(params.get("account"))
     data = {"dnc": dnc, "phone_number": phone_number}
-    return client.call(f"/v1/dnc_contacts/{contact_id}/", "PUT", form_data=data)
+    return client.call(f"{ENDPOINTS.DNC_CONTACTS}{contact_id}/", "PUT", form_data=data)
 
 def delete_dnc_contact(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -122,7 +123,7 @@ def delete_dnc_contact(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"text": "'contactId' is required."}]}
 
     client = McpApiClient(params.get("account"))
-    return client.call(f"/v1/dnc_contacts/{contact_id}/", "DELETE")
+    return client.call(f"{ENDPOINTS.DNC_CONTACTS}{contact_id}/", "DELETE")
 
 def create_dnc_list(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -141,7 +142,7 @@ def create_dnc_list(params: Dict[str, Any]) -> Dict[str, Any]:
 
     client = McpApiClient(params.get("account"))
     data = {"name": name}
-    return client.call("/v1/dnc_lists/", "POST", form_data=data)
+    return client.call(ENDPOINTS.DNC_LISTS, "POST", form_data=data)
 
 def list_dnc_lists(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -165,7 +166,7 @@ def list_dnc_lists(params: Dict[str, Any]) -> Dict[str, Any]:
             query_params["page"] = params["page"]
         if params.get("pageSize"):
             query_params["page_size"] = params["pageSize"]
-        return client.call("/v1/dnc_lists/", "GET", query=query_params)
+        return client.call(ENDPOINTS.DNC_LISTS, "GET", query=query_params)
 
     all_results = []
     current_page = 1
@@ -174,7 +175,7 @@ def list_dnc_lists(params: Dict[str, Any]) -> Dict[str, Any]:
         if params.get("pageSize"):
             query_params["page_size"] = params["pageSize"]
 
-        result = client.call("/v1/dnc_lists/", "GET", query=query_params)
+        result = client.call(ENDPOINTS.DNC_LISTS, "GET", query=query_params)
         if result.get("isError"):
             return result
         
@@ -207,7 +208,7 @@ def update_dnc_list(params: Dict[str, Any]) -> Dict[str, Any]:
 
     client = McpApiClient(params.get("account"))
     data = {"name": name}
-    return client.call(f"/v1/dnc_lists/{list_id}/", "PUT", form_data=data)
+    return client.call(f"{ENDPOINTS.DNC_LISTS}{list_id}/", "PUT", form_data=data)
 
 def delete_dnc_list(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -225,4 +226,4 @@ def delete_dnc_list(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"text": "'listId' is required."}]}
 
     client = McpApiClient(params.get("account"))
-    return client.call(f"/v1/dnc_lists/{list_id}/", "DELETE")
+    return client.call(f"{ENDPOINTS.DNC_LISTS}{list_id}/", "DELETE")

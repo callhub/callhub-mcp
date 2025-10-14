@@ -9,6 +9,7 @@ import requests
 from dotenv import load_dotenv, set_key, find_dotenv
 from .auth import _env_path, load_all_credentials, save_credentials
 from .utils import build_url, get_auth_headers, api_call
+from .constants import ENDPOINTS
 
 def add_account(account_name: str, username: str, api_key: str, base_url: str) -> dict:
     """
@@ -26,7 +27,7 @@ def add_account(account_name: str, username: str, api_key: str, base_url: str) -
     try:
         # --- Verification Step ---
         # Before saving, make a simple API call to verify credentials are valid
-        verification_url = build_url(base_url, "/v1/users/")
+        verification_url = build_url(base_url, ENDPOINTS.USERS)
         headers = get_auth_headers(api_key)
         
         response = api_call("GET", verification_url, headers)

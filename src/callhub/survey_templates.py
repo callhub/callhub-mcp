@@ -10,6 +10,7 @@ Based on Django REST framework serializers for PSurvey_template and PSection_tem
 from typing import Dict, Any
 
 from .client import McpApiClient
+from .constants import ENDPOINTS
 
 def list_survey_templates(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -22,7 +23,7 @@ def list_survey_templates(params: Dict[str, Any]) -> Dict[str, Any]:
         Dictionary with survey templates list or error information
     """
     client = McpApiClient(params.get("accountName"))
-    return client.call("/v1/templates/", "GET")
+    return client.call(ENDPOINTS.TEMPLATES, "GET")
 
 def get_survey_template(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -39,7 +40,7 @@ def get_survey_template(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "templateId is required"}]}
     
     client = McpApiClient(params.get("accountName"))
-    return client.call(f"/v1/templates/{template_id}/", "GET")
+    return client.call(f"{ENDPOINTS.TEMPLATES}{template_id}/", "GET")
 
 def create_survey_template(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -60,7 +61,7 @@ def create_survey_template(params: Dict[str, Any]) -> Dict[str, Any]:
     
     client = McpApiClient(params.get("accountName"))
     survey_data = {"label": label, "questions": params.get("questions", [])}
-    return client.call("/v1/templates/", "POST", body=survey_data)
+    return client.call(ENDPOINTS.TEMPLATES, "POST", body=survey_data)
 
 def update_survey_template(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -91,7 +92,7 @@ def update_survey_template(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "No update data provided."}]}
     
     client = McpApiClient(params.get("accountName"))
-    return client.call(f"/v1/templates/{template_id}/", "PATCH", body=update_data)
+    return client.call(f"{ENDPOINTS.TEMPLATES}{template_id}/", "PATCH", body=update_data)
 
 def delete_survey_template(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -108,44 +109,4 @@ def delete_survey_template(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "templateId is required"}]}
     
     client = McpApiClient(params.get("accountName"))
-    return client.call(f"/v1/templates/{template_id}/", "DELETE")
-
-def create_question_template(params: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Create a new question template (PSection_template).
-    
-    Args:
-        params: Dictionary with question template data including:
-            - type: Question type
-            - question: Question text
-            - question_name: Question identifier (optional)
-            - is_initial_message: Boolean flag (optional)
-            - survey_template_id: Parent survey template ID
-            - accountName: Optional account name
-            
-    Returns:
-        Dictionary with created question template or error information
-    """
-    question_type = params.get("type")
-    question_text = params.get("question")
-    survey_template_id = params.get("survey_template_id")
-    
-    if not all([question_type, question_text, survey_template_id]):
-        return {"isError": True, "content": [{"type": "text", "text": "type, question, and survey_template_id are required"}]}
-    
-    client = McpApiClient(params.get("accountName"))
-
-    # Prepare the question template data
-    question_data = {
-        "type": question_type,
-        "question": question_text,
-        "survey_template": survey_template_id
-    }
-    
-    # Optional fields
-    if "question_name" in params:
-        question_data["question_name"] = params["question_name"]
-    if "is_initial_message" in params:
-        question_data["is_initial_message"] = params["is_initial_message"]
-    
-    return client.call("/api/question-templates/", "POST", body=question_data)
+    return client.call(f"{ENDPOINTS.TEMPLATES}{template_id}/", "DELETE")

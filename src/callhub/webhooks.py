@@ -7,6 +7,7 @@ import sys
 from typing import Dict, Any
 
 from .client import McpApiClient
+from .constants import ENDPOINTS
 
 def list_webhooks(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -28,7 +29,7 @@ def list_webhooks(params: Dict[str, Any]) -> Dict[str, Any]:
             query_params["page"] = params["page"]
         if params.get("pageSize") is not None:
             query_params["page_size"] = params["pageSize"]
-        return client.call("/v1/webhooks/", "GET", query=query_params)
+        return client.call(ENDPOINTS.WEBHOOKS, "GET", query=query_params)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error listing webhooks: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -104,7 +105,7 @@ def create_webhook(params: Dict[str, Any]) -> Dict[str, Any]:
         
         client = McpApiClient(params.get("accountName"))
         data = {"event": event, "target": target}
-        return client.call("/v1/webhooks/", "POST", form_data=data)
+        return client.call(ENDPOINTS.WEBHOOKS, "POST", form_data=data)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error creating webhook: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -127,7 +128,7 @@ def delete_webhook(params: Dict[str, Any]) -> Dict[str, Any]:
             return {"isError": True, "content": [{"type": "text", "text": "'webhookId' is required."}]}
         
         client = McpApiClient(params.get("accountName"))
-        return client.call(f"/v1/webhooks/{webhook_id}/", "DELETE")
+        return client.call(f"{ENDPOINTS.WEBHOOKS}{webhook_id}/", "DELETE")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error deleting webhook: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

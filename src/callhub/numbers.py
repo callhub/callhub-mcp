@@ -7,6 +7,7 @@ import sys
 from typing import Dict, Any
 
 from .client import McpApiClient
+from .constants import ENDPOINTS
 
 def list_rented_numbers(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -21,7 +22,7 @@ def list_rented_numbers(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     try:
         client = McpApiClient(params.get("accountName"))
-        return client.call("/v1/numbers/rented_calling_numbers/", "GET")
+        return client.call(f"{ENDPOINTS.NUMBERS}rented_calling_numbers/", "GET")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error listing rented numbers: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -39,7 +40,7 @@ def list_validated_numbers(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     try:
         client = McpApiClient(params.get("accountName"))
-        return client.call("/v1/numbers/validated_numbers/", "GET")
+        return client.call(f"{ENDPOINTS.NUMBERS}validated_numbers/", "GET")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error listing validated numbers: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -77,7 +78,7 @@ def rent_number(params: Dict[str, Any]) -> Dict[str, Any]:
         if "setup_fee" in params:
             data["setup_fee"] = params["setup_fee"]
         
-        return client.call("/v1/numbers/rent/", "POST", body=data)
+        return client.call(f"{ENDPOINTS.NUMBERS}rent/", "POST", body=data)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error renting number: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -100,7 +101,7 @@ def get_area_codes(params: Dict[str, Any]) -> Dict[str, Any]:
             return {"isError": True, "content": [{"type": "text", "text": "country_iso is required"}]}
         
         client = McpApiClient(params.get("accountName"))
-        return client.call("/v2/get_area_code/", "GET", query={"country_iso": country_iso})
+        return client.call(ENDPOINTS.GET_AREA_CODE, "GET", query={"country_iso": country_iso})
     except Exception as e:
         sys.stderr.write(f"[callhub] Error getting area codes: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -123,7 +124,7 @@ def get_number_rent_rates(params: Dict[str, Any]) -> Dict[str, Any]:
             return {"isError": True, "content": [{"type": "text", "text": "country_iso is required"}]}
         
         client = McpApiClient(params.get("accountName"))
-        return client.call("/v1/number_rent_rates/", "GET", query={"country_iso": country_iso})
+        return client.call(ENDPOINTS.NUMBER_RENT_RATES, "GET", query={"country_iso": country_iso})
     except Exception as e:
         sys.stderr.write(f"[callhub] Error getting rent rates: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -141,7 +142,7 @@ def get_auto_unrent_settings(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     try:
         client = McpApiClient(params.get("accountName"))
-        return client.call("/v2/auto_unrent/settings/", "GET")
+        return client.call(ENDPOINTS.AUTO_UNRENT_SETTINGS, "GET")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error getting auto-unrent settings: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -173,7 +174,7 @@ def update_auto_unrent_settings(params: Dict[str, Any]) -> Dict[str, Any]:
         if "email_reminders_enabled" in params:
             data["email_reminders_enabled"] = params["email_reminders_enabled"]
         
-        return client.call("/v2/auto_unrent/settings/", "POST", body=data)
+        return client.call(ENDPOINTS.AUTO_UNRENT_SETTINGS, "POST", body=data)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error updating auto-unrent settings: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -191,7 +192,7 @@ def revalidate_numbers(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     try:
         client = McpApiClient(params.get("accountName"))
-        return client.call("/v1/revalidate_numbers/", "POST")
+        return client.call(ENDPOINTS.REVALIDATE_NUMBERS, "POST")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error revalidating numbers: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -209,7 +210,7 @@ def list_sms_only_numbers(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     try:
         client = McpApiClient(params.get("accountName"))
-        return client.call("/v2/sms_number/show_rented_number/", "GET")
+        return client.call(ENDPOINTS.SMS_NUMBER_SHOW_RENTED_NUMBER, "GET")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error listing SMS-only numbers: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -227,7 +228,7 @@ def list_combined_sms_numbers(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     try:
         client = McpApiClient(params.get("accountName"))
-        return client.call("/v2/validated_and_rented_numbers/", "GET")
+        return client.call(ENDPOINTS.VALIDATED_AND_RENTED_NUMBERS, "GET")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error listing combined SMS numbers: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -255,7 +256,7 @@ def auto_rent_sms_number(params: Dict[str, Any]) -> Dict[str, Any]:
             "country_iso": country_iso,
             "feature": params.get("feature", "sms")
         }
-        return client.call("/v2/sms_number/sms_rent_number/", "POST", body=data)
+        return client.call(ENDPOINTS.SMS_RENT_NUMBER, "POST", body=data)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error auto-renting SMS number: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

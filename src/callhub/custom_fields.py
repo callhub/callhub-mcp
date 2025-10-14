@@ -8,6 +8,7 @@ import json
 from typing import Dict, Any
 
 from .client import McpApiClient
+from .constants import ENDPOINTS
 
 def list_custom_fields(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -29,7 +30,7 @@ def list_custom_fields(params: Dict[str, Any]) -> Dict[str, Any]:
     if params.get("pageSize"):
         query["page_size"] = params["pageSize"]
 
-    result = client.call("/v1/custom_fields/", "GET", query=query)
+    result = client.call(ENDPOINTS.CUSTOM_FIELDS, "GET", query=query)
     
     if result.get("isError"):
         return result
@@ -87,10 +88,10 @@ def get_custom_field(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "Either 'customFieldId' or both 'name' and 'field_type' are required."}]}
 
     if field_id:
-        return client.call(f"/v1/custom_fields/{field_id}/", "GET")
+        return client.call(f"{ENDPOINTS.CUSTOM_FIELDS}{field_id}/", "GET")
     else:
         query_params = {"name": name, "field_type": field_type}
-        return client.call("/v1/custom_fields/", "GET", query=query_params)
+        return client.call(ENDPOINTS.CUSTOM_FIELDS, "GET", query=query_params)
 
 def create_custom_field(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -121,7 +122,7 @@ def create_custom_field(params: Dict[str, Any]) -> Dict[str, Any]:
 
     # Debug output to help troubleshoot
     sys.stderr.write(f"[callhub] Creating custom field with params: {request_data}\n")
-    return client.call("/v1/custom_fields/", "POST", body=request_data)
+    return client.call(ENDPOINTS.CUSTOM_FIELDS, "POST", body=request_data)
 
 def update_custom_field(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -150,7 +151,7 @@ def update_custom_field(params: Dict[str, Any]) -> Dict[str, Any]:
 
     # Debug output to help troubleshoot
     sys.stderr.write(f"[callhub] Updating custom field {field_id} with params: {update_data}\n")
-    return client.call(f"/v1/custom_fields/{field_id}/", "PUT", body=update_data)
+    return client.call(f"{ENDPOINTS.CUSTOM_FIELDS}{field_id}/", "PUT", body=update_data)
 
 def delete_custom_field(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -169,7 +170,7 @@ def delete_custom_field(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'customFieldId' is required."}]}
 
     client = McpApiClient(params.get("accountName"))
-    result = client.call(f"/v1/custom_fields/{field_id}/", "DELETE")
+    result = client.call(f"{ENDPOINTS.CUSTOM_FIELDS}{field_id}/", "DELETE")
     
     if not result.get("isError"):
         return {"deleted": True, "customFieldId": field_id}
@@ -265,7 +266,7 @@ def update_contact_custom_field(params: Dict[str, Any]) -> Dict[str, Any]:
     client = McpApiClient(params.get("accountName"))
 
     # First, get the contact to get the current data and the field name
-    contact_result = client.call(f"/v1/contacts/{contact_id}/", "GET")
+    contact_result = client.call(f"{ENDPOINTS.CONTACTS_V1}{contact_id}/", "GET")
     if contact_result.get("isError"):
         return contact_result
         
@@ -291,7 +292,7 @@ def update_contact_custom_field(params: Dict[str, Any]) -> Dict[str, Any]:
     sys.stderr.write(f"[callhub] Request payload: {update_data}\n")
 
     # Make the API call to update the contact
-    result = client.call(f"/v1/contacts/{contact_id}/", "PUT", body=update_data)
+    result = client.call(f"{ENDPOINTS.CONTACTS_V1}{contact_id}/", "PUT", body=update_data)
 
     # If successful, standardize the response
     if not result.get("isError"):

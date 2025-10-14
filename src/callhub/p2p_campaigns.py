@@ -9,6 +9,7 @@ from typing import Dict, Any, List
 import json
 
 from .client import McpApiClient
+from .constants import ENDPOINTS
 
 def list_p2p_campaigns(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -30,7 +31,7 @@ def list_p2p_campaigns(params: Dict[str, Any]) -> Dict[str, Any]:
             query_params["page"] = params["page"]
         if params.get("pageSize") is not None:
             query_params["page_size"] = params["pageSize"]
-        return client.call("/v1/p2p_campaigns/", "GET", query=query_params)
+        return client.call(ENDPOINTS.P2P_CAMPAIGNS, "GET", query=query_params)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error listing P2P campaigns: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -61,7 +62,7 @@ def update_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
 
     try:
         client = McpApiClient(params.get("account"))
-        return client.call(f"/v2/sms_campaign/snowflake/{campaign_id}/", "PUT", body={"status": status})
+        return client.call(f"{ENDPOINTS.P2P_CAMPAIGN}{campaign_id}/", "PUT", body={"status": status})
     except Exception as e:
         sys.stderr.write(f"[callhub] Error updating P2P campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -85,7 +86,7 @@ def delete_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     
     try:
         client = McpApiClient(params.get("account"))
-        return client.call(f"/v2/sms_campaign/snowflake/{campaign_id}/", "DELETE")
+        return client.call(f"{ENDPOINTS.P2P_CAMPAIGN}{campaign_id}/", "DELETE")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error deleting P2P campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -108,7 +109,7 @@ def get_p2p_campaign_agents(params: Dict[str, Any]) -> Dict[str, Any]:
     
     try:
         client = McpApiClient(params.get("account"))
-        return client.call(f"/v2/collective_texting/{campaign_id}/agents/", "GET")
+        return client.call(ENDPOINTS.COLLECTIVE_TEXTING_AGENTS.format(campaign_id=campaign_id), "GET")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error getting P2P campaign agents: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -137,7 +138,7 @@ def add_agents_to_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     try:
         client = McpApiClient(params.get("account"))
         data = {"agents": agent_ids}
-        return client.call(f"/v2/collective_texting/{campaign_id}/agents/add/", "POST", body=data)
+        return client.call(ENDPOINTS.COLLECTIVE_TEXTING_AGENTS_ADD.format(campaign_id=campaign_id), "POST", body=data)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error adding agents to P2P campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -163,7 +164,7 @@ def reassign_p2p_agents(params: Dict[str, Any]) -> Dict[str, Any]:
     
     try:
         client = McpApiClient(params.get("account"))
-        return client.call(f"/v2/collective_texting/{campaign_id}/agents/reassign/", "POST", body=reassign_data)
+        return client.call(ENDPOINTS.COLLECTIVE_TEXTING_AGENTS_REASSIGN.format(campaign_id=campaign_id), "POST", body=reassign_data)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error reassigning P2P agents: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -260,7 +261,7 @@ def create_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
         # Log the payload being sent for debugging
         sys.stderr.write(f"[callhub] Template ID: {template_id}\n")
         sys.stderr.write(f"[callhub] Payload: {json.dumps(payload, indent=2)}\n")
-        response = client.call("/v1/p2p_campaigns/", "POST", body=payload)
+        response = client.call(ENDPOINTS.P2P_CAMPAIGNS, "POST", body=payload)
         # Handle successful response
         if not response.get("isError") and "id" in response:
             sys.stderr.write(f"[callhub] ✅ P2P Campaign created successfully!\n")
@@ -281,17 +282,17 @@ def create_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
         # Provide helpful error messages based on common issues discovered during testing
         if "SSL" in error_msg.upper():
             return {
-                "isError": True,
+                "isError": True, 
                 "content": [{
-                    "type": "text",
+                    "type": "text", 
                     "text": f"SSL Error: {error_msg}. For local development with 0.0.0.0, use HTTP base URL instead of HTTPS."
                 }]
             }
         elif "Connection" in error_msg:
             return {
-                "isError": True,
+                "isError": True, 
                 "content": [{
-                    "type": "text",
+                    "type": "text", 
                     "text": f"Connection Error: {error_msg}. Check if the base URL is accessible."
                 }]
             }
@@ -315,9 +316,9 @@ def get_p2p_surveys(params: Dict[str, Any]) -> Dict[str, Any]:
         campaign_id = params.get("campaignId")
         
         if campaign_id:
-            url = f"/v2/sms_campaign/snowflake/survey-list/{campaign_id}/"
+            url = f"{ENDPOINTS.P2P_CAMPAIGN_SURVEY_LIST}{campaign_id}/"
         else:
-            url = "/v2/sms_campaign/snowflake/survey-list/"
+            url = ENDPOINTS.P2P_CAMPAIGN_SURVEY_LIST
         
         return client.call(url, "GET")
     except Exception as e:
@@ -342,7 +343,7 @@ def duplicate_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
 
     try:
         client = McpApiClient(params.get("account"))
-        return client.call(f"/v1/p2p_campaigns/{campaign_id}/duplicate/", "POST")
+        return client.call(f"{ENDPOINTS.P2P_CAMPAIGNS}{campaign_id}/duplicate/", "POST")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error duplicating P2P campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

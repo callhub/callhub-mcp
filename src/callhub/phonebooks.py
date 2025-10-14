@@ -7,6 +7,7 @@ import sys
 from typing import Dict, Any, List
 
 from .client import McpApiClient
+from .constants import ENDPOINTS
 
 def list_phonebooks(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -27,7 +28,7 @@ def list_phonebooks(params: Dict[str, Any]) -> Dict[str, Any]:
         query["page"] = params["page"]
     if params.get("pageSize"):
         query["page_size"] = params["pageSize"]
-    return client.call("/v1/phonebooks/", "GET", query=query)
+    return client.call(ENDPOINTS.PHONEBOOKS, "GET", query=query)
 
 def get_phonebook(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -46,7 +47,7 @@ def get_phonebook(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'phonebookId' is required."}]}
 
     client = McpApiClient(params.get("accountName"))
-    return client.call(f"/v1/phonebooks/{pb_id}/", "GET")
+    return client.call(f"{ENDPOINTS.PHONEBOOKS}{pb_id}/", "GET")
 
 def create_phonebook(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -66,7 +67,7 @@ def create_phonebook(params: Dict[str, Any]) -> Dict[str, Any]:
 
     sys.stderr.write(f"[callhub] Creating phonebook with params: {params}\n")
     client = McpApiClient(params.pop("accountName", None))
-    return client.call("/v1/phonebooks/", "POST", form_data=params)
+    return client.call(ENDPOINTS.PHONEBOOKS, "POST", form_data=params)
 
 def update_phonebook(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -88,7 +89,7 @@ def update_phonebook(params: Dict[str, Any]) -> Dict[str, Any]:
 
     sys.stderr.write(f"[callhub] Updating phonebook {pb_id} with params: {params}\n")
     client = McpApiClient(params.pop("accountName", None))
-    return client.call(f"/v1/phonebooks/{pb_id}/", "PATCH", form_data=params)
+    return client.call(f"{ENDPOINTS.PHONEBOOKS}{pb_id}/", "PATCH", form_data=params)
 
 def delete_phonebook(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -107,7 +108,7 @@ def delete_phonebook(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'phonebookId' is required."}]}
 
     client = McpApiClient(params.get("accountName"))
-    result = client.call(f"/v1/phonebooks/{pb_id}/", "DELETE")
+    result = client.call(f"{ENDPOINTS.PHONEBOOKS}{pb_id}/", "DELETE")
     
     if not result.get("isError"):
         return {"deleted": True, "phonebookId": pb_id}
@@ -136,7 +137,7 @@ def add_contacts_to_phonebook(params: Dict[str, Any]) -> Dict[str, Any]:
 
     client = McpApiClient(params.get("accountName"))
     body = {"contact_ids": contact_ids_str}
-    return client.call(f"/v1/phonebooks/{pb_id}/contacts/", "POST", body=body)
+    return client.call(f"{ENDPOINTS.PHONEBOOKS}{pb_id}/contacts/", "POST", body=body)
 
 def remove_contact_from_phonebook(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -158,7 +159,7 @@ def remove_contact_from_phonebook(params: Dict[str, Any]) -> Dict[str, Any]:
 
     client = McpApiClient(params.get("accountName"))
     body = {"contact_ids": [str(cid)]}
-    result = client.call(f"/v1/phonebooks/{pb_id}/contacts/", "DELETE", body=body)
+    result = client.call(f"{ENDPOINTS.PHONEBOOKS}{pb_id}/contacts/", "DELETE", body=body)
     
     if not result.get("isError"):
         try:
@@ -191,7 +192,7 @@ def get_phonebook_count(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'phonebookId' is required."}]}
 
     client = McpApiClient(params.get("accountName"))
-    return client.call(f"/v1/phonebooks/{pb_id}/numbers_count/", "GET")
+    return client.call(f"{ENDPOINTS.PHONEBOOKS}{pb_id}/numbers_count/", "GET")
 
 def get_phonebook_contacts(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -221,7 +222,7 @@ def get_phonebook_contacts(params: Dict[str, Any]) -> Dict[str, Any]:
             query["page"] = params["page"]
         if params.get("pageSize"):
             query["page_size"] = params["pageSize"]
-        return client.call(f"/v1/phonebooks/{pb_id}/contacts/", "GET", query=query)
+        return client.call(f"{ENDPOINTS.PHONEBOOKS}{pb_id}/contacts/", "GET", query=query)
 
     results = []
     page = 1
@@ -230,7 +231,7 @@ def get_phonebook_contacts(params: Dict[str, Any]) -> Dict[str, Any]:
         if params.get("pageSize"):
             query["page_size"] = params["pageSize"]
         
-        result = client.call(f"/v1/phonebooks/{pb_id}/contacts/", "GET", query=query)
+        result = client.call(f"{ENDPOINTS.PHONEBOOKS}{pb_id}/contacts/", "GET", query=query)
         if result.get("isError"):
             return result
         

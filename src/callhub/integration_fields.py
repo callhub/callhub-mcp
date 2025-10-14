@@ -9,6 +9,7 @@ This module provides functions for managing integration custom fields in CallHub
 from typing import Dict, Any
 
 from .client import McpApiClient
+from .constants import ENDPOINTS
 
 def list_integration_fields(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -22,7 +23,7 @@ def list_integration_fields(params: Dict[str, Any]) -> Dict[str, Any]:
         Dictionary with integration fields list or error information
     """
     client = McpApiClient(params.get("accountName"))
-    return client.call("/v1/integration_fields/", "GET")
+    return client.call(ENDPOINTS.INTEGRATION_FIELDS, "GET")
 
 def get_integration_field(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -44,4 +45,4 @@ def get_integration_field(params: Dict[str, Any]) -> Dict[str, Any]:
         }
     
     client = McpApiClient(params.get("accountName"))
-    return client.call(f"/v1/integration_fields/{field_id}/", "GET")
+    return client.call(f"{ENDPOINTS.INTEGRATION_FIELDS}{field_id}/", "GET")

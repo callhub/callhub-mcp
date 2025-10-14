@@ -5,6 +5,7 @@ from typing import Dict, Any
 from datetime import datetime
 
 from .client import McpApiClient
+from .constants import ENDPOINTS
 
 def list_users(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -18,7 +19,7 @@ def list_users(params: Dict[str, Any]) -> Dict[str, Any]:
         dict: A dictionary containing the API response with user data
     """
     client = McpApiClient(params.get("accountName"))
-    return client.call("/v1/users/", "GET")
+    return client.call(ENDPOINTS.USERS, "GET")
 
 def get_credit_usage(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -60,9 +61,9 @@ def get_credit_usage(params: Dict[str, Any]) -> Dict[str, Any]:
     generate_csv = params.get("generate_csv", False)
     payload["generate_csv"] = generate_csv
     
-    sys.stderr.write(f"[callhub] POST request to v2/credits_usage/\n")
+    sys.stderr.write(f"[callhub] POST request to {ENDPOINTS.CREDITS_USAGE}\n")
     sys.stderr.write(f"[callhub] Payload: {payload}\n")
-    result = client.call("/v2/credits_usage/", "POST", body=payload)
+    result = client.call(ENDPOINTS.CREDITS_USAGE, "POST", body=payload)
 
     if generate_csv and not result.get("isError"):
         csv_data = result.get("message", "")

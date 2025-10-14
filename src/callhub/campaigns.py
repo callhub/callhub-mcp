@@ -8,6 +8,7 @@ import json
 from typing import Dict, Any
 
 from .client import McpApiClient
+from .constants import ENDPOINTS
 
 def list_call_center_campaigns(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -30,7 +31,7 @@ def list_call_center_campaigns(params: Dict[str, Any]) -> Dict[str, Any]:
         if params.get("pageSize") is not None:
             query_params["page_size"] = params["pageSize"]
         
-        return client.call("/v1/callcenter_campaigns/", "GET", query=query_params)
+        return client.call(ENDPOINTS.CALL_CENTER_CAMPAIGNS, "GET", query=query_params)
         
     except Exception as e:
         sys.stderr.write(f"[callhub] Error listing call center campaigns: {str(e)}\n")
@@ -83,7 +84,7 @@ def update_call_center_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     try:
         client = McpApiClient(params.get("accountName"))
         data = {"status": status}
-        return client.call(f"/v1/callcenter_campaigns/{campaign_id}/", "PATCH", body=data)
+        return client.call(f"{ENDPOINTS.CALL_CENTER_CAMPAIGNS}{campaign_id}/", "PATCH", body=data)
         
     except Exception as e:
         sys.stderr.write(f"[callhub] Error updating call center campaign: {str(e)}\n")
@@ -266,7 +267,7 @@ def create_call_center_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     
     try:
         client = McpApiClient(params.get("accountName"))
-        return client.call("/v1/power_campaign/create/", "POST", body=campaign_data)
+        return client.call(f"{ENDPOINTS.POWER_CAMPAIGN}create/", "POST", body=campaign_data)
         
     except Exception as e:
         sys.stderr.write(f"[callhub] Error creating call center campaign: {str(e)}")
@@ -293,7 +294,7 @@ def exportCampaignData(params: Dict[str, Any]) -> Dict[str, Any]:
         
         client = McpApiClient(params.get("accountName"))
         query_params = {"format": params.get("format", "csv")}
-        return client.call(f"/v1/campaigns/{campaign_id}/export", "GET", query=query_params)
+        return client.call(f"{ENDPOINTS.CAMPAIGNS}{campaign_id}/export", "GET", query=query_params)
         
     except Exception as e:
         sys.stderr.write(f"[callhub] Error exporting campaign data: {str(e)}\n")
@@ -320,7 +321,7 @@ def getCampaignStatsAdvanced(params: Dict[str, Any]) -> Dict[str, Any]:
         
         client = McpApiClient(params.get("accountName"))
         query_params = {"details": params.get("includeDetails", True)}
-        return client.call(f"/v1/campaigns/{campaign_id}/stats", "GET", query=query_params)
+        return client.call(f"{ENDPOINTS.CAMPAIGNS}{campaign_id}/stats", "GET", query=query_params)
         
     except Exception as e:
         sys.stderr.write(f"[callhub] Error getting campaign stats: {str(e)}\n")
@@ -365,7 +366,7 @@ def duplicate_power_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
             if field in params:
                 data[field] = params[field]
 
-        return client.call("/v1/power_campaign/duplicate/", "POST", body=data)
+        return client.call(f"{ENDPOINTS.POWER_CAMPAIGN}duplicate/", "POST", body=data)
         
     except Exception as e:
         sys.stderr.write(f"[callhub] Error duplicating power campaign: {str(e)}\n")
@@ -404,7 +405,7 @@ def get_media_files(params: Dict[str, Any]) -> Dict[str, Any]:
         if params.get("exclude_type"):
             query_params["exclude_type"] = params["exclude_type"]
 
-        return client.call("/v2/media/", "GET", query=query_params)
+        return client.call(ENDPOINTS.MEDIA, "GET", query=query_params)
         
     except Exception as e:
         sys.stderr.write(f"[callhub] Error getting media files: {str(e)}\n")
@@ -434,7 +435,7 @@ def add_agents_to_power_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     try:
         client = McpApiClient(params.get("accountName"))
         data = {"agents": agent_ids}
-        return client.call(f"/v1/power_campaign/{campaign_id}/agents/add/", "POST", body=data)
+        return client.call(f"{ENDPOINTS.POWER_CAMPAIGN}{campaign_id}/agents/add/", "POST", body=data)
         
     except Exception as e:
         sys.stderr.write(f"[callhub] Error adding agents to power campaign: {str(e)}\n")
@@ -449,4 +450,4 @@ def export_power_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'campaign_id' is required."}]}
 
     client = McpApiClient(params.get("accountName"))
-    return client.call(f"/v1/power_campaign/{campaign_id}/export/", "GET")
+    return client.call(f"{ENDPOINTS.POWER_CAMPAIGN}{campaign_id}/export/", "GET")

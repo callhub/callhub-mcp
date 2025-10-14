@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any
 
 from .client import McpApiClient
+from .constants import ENDPOINTS
 
 def create_sms_broadcast(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -93,7 +94,7 @@ def create_sms_broadcast(params: Dict[str, Any]) -> Dict[str, Any]:
             if field in params and params[field] is not None:
                 data[field] = params[field]
 
-        return client.call("/v2/sms_broadcast/create/", "POST", body=data)
+        return client.call(ENDPOINTS.SMS_BROADCAST_CREATE, "POST", body=data)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error creating SMS broadcast campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -116,7 +117,7 @@ def get_sms_broadcast(params: Dict[str, Any]) -> Dict[str, Any]:
             return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
 
         client = McpApiClient(params.get("account"))
-        return client.call(f"v2/sms_broadcast/{campaign_id}/", "GET")
+        return client.call(f"{ENDPOINTS.SMS_BROADCAST}{campaign_id}/", "GET")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error getting SMS broadcast campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -160,7 +161,7 @@ def update_sms_broadcast(params: Dict[str, Any]) -> Dict[str, Any]:
         
         client = McpApiClient(params.get("account"))
         data = {"status": status}
-        return client.call(f"v2/sms_broadcast/{campaign_id}/", "PATCH", body=data)
+        return client.call(f"{ENDPOINTS.SMS_BROADCAST}{campaign_id}/", "PATCH", body=data)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error updating SMS broadcast campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -183,7 +184,7 @@ def duplicate_sms_broadcast(params: Dict[str, Any]) -> Dict[str, Any]:
             return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
 
         client = McpApiClient(params.get("account"))
-        return client.call(f"v2/sms_broadcast/{campaign_id}/duplicate/", "POST")
+        return client.call(f"{ENDPOINTS.SMS_BROADCAST}{campaign_id}/duplicate/", "POST")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error duplicating SMS broadcast campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

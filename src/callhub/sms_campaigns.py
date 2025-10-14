@@ -7,6 +7,7 @@ import sys
 from typing import Dict, Any
 
 from .client import McpApiClient
+from .constants import ENDPOINTS
 
 def list_sms_campaigns(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -30,7 +31,7 @@ def list_sms_campaigns(params: Dict[str, Any]) -> Dict[str, Any]:
             query_params["page"] = params["page"]
         if params.get("pageSize") is not None:
             query_params["page_size"] = params["pageSize"]
-        return client.call("/v1/sms_campaigns/", "GET", query=query_params)
+        return client.call(ENDPOINTS.SMS_CAMPAIGNS, "GET", query=query_params)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error listing SMS campaigns: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -82,7 +83,7 @@ def update_sms_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
 
         # Prepare data
         data = {"status": status}
-        return client.call(f"v1/sms_campaigns/{campaign_id}/", "PATCH", body=data)
+        return client.call(f"{ENDPOINTS.SMS_CAMPAIGNS}{campaign_id}/", "PATCH", body=data)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error updating SMS campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -96,4 +97,4 @@ def export_sms_report(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'campaign_id' is required."}]}
 
     client = McpApiClient(params.get("accountName"))
-    return client.call("/v1/sms_campaign/sms_report/export/", "GET", query={"campaign_id": campaign_id})
+    return client.call(ENDPOINTS.SMS_CAMPAIGN_REPORT_EXPORT, "GET", query={"campaign_id": campaign_id})

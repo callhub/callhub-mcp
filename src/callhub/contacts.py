@@ -9,6 +9,7 @@ import requests
 from typing import Dict, Any, List
 
 from .client import McpApiClient
+from .constants import ENDPOINTS
 
 def list_contacts(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -38,7 +39,7 @@ def list_contacts(params: Dict[str, Any]) -> Dict[str, Any]:
         if f := params.get("filters"):
             query.update(f)
 
-        result = client.call("/v1/contacts/", "GET", query=query)
+        result = client.call(ENDPOINTS.CONTACTS_V1, "GET", query=query)
         
         if result.get("isError"):
             return result
@@ -70,7 +71,7 @@ def get_contact(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'contactId' is required."}]}
 
     client = McpApiClient(params.get("accountName"))
-    return client.call(f"/v1/contacts/{cid}/", "GET")
+    return client.call(f"{ENDPOINTS.CONTACTS_V1}{cid}/", "GET")
 
 def create_contact(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -90,7 +91,7 @@ def create_contact(params: Dict[str, Any]) -> Dict[str, Any]:
 
     sys.stderr.write(f"[callhub] Creating contact with params: {params}\n")
     client = McpApiClient(params.pop("accountName", None))
-    return client.call("/v1/contacts/", "POST", form_data=params)
+    return client.call(ENDPOINTS.CONTACTS_V1, "POST", form_data=params)
 
 def create_contacts_bulk(params: dict) -> dict:
     """
@@ -174,7 +175,7 @@ def create_contacts_bulk(params: dict) -> dict:
     
     # Setup the common headers for both file upload and URL cases
     headers = {"Authorization": f"Token {api_key}"}
-    url = build_url(base_url, "v1/contacts/bulk_create/")
+    url = build_url(base_url, ENDPOINTS.CONTACTS_BULK_CREATE)
     
     try:
         # Handle file upload
@@ -266,21 +267,21 @@ def create_contacts_bulk(params: dict) -> dict:
             retry_after = None
             if e.response.headers:
                 retry_after = e.response.headers.get('retry-after') or e.response.headers.get('Retry-After')
-
+            
             retry_msg = ""
             if retry_after:
                 retry_msg = f" Please try again in {retry_after} seconds."
-
+            
             return {
                 "isError": True,
                 "content": [{
-                    "type": "text",
+                    "type": "text", 
                     "text": f"The bulk create contacts API is currently rate limited. It can only be called once per minute.{retry_msg}"
                 }],
                 "isRateLimited": True,
                 "retryAfter": retry_after if retry_after else 60
             }
-
+        
         # For all other request exceptions
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -315,7 +316,7 @@ def update_contact(params: Dict[str, Any]) -> Dict[str, Any]:
     sys.stderr.write(f"[callhub] Updating contact with phone {phone} with params: {params}\n")
 
     client = McpApiClient(account_name)
-    result= client.call("/v1/contacts/", "POST", form_data=params)
+    result= client.call(ENDPOINTS.CONTACTS_V1, "POST", form_data=params)
     
     # Additional verification for update operations
     if "isError" not in result and "id" in result and original_contact_id:
@@ -349,7 +350,7 @@ def delete_contact(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'contactId' is required."}]}
 
     client = McpApiClient(params.get("accountName"))
-    result = client.call(f"/v1/contacts/{cid}/", "DELETE")
+    result = client.call(f"{ENDPOINTS.CONTACTS_V1}{cid}/", "DELETE")
     
     if not result.get("isError"):
         return {"deleted": True, "contactId": cid}
@@ -367,7 +368,7 @@ def get_contact_fields(params: Dict[str, Any]) -> Dict[str, Any]:
         Dictionary with contact fields
     """
     client = McpApiClient(params.get("accountName"))
-    return client.call("/v1/contacts/fields/", "GET")
+    return client.call(ENDPOINTS.CONTACTS_FIELDS, "GET")
 
 def find_duplicate_contacts(params: Dict[str, Any]) -> List[str]:
     """

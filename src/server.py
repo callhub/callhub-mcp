@@ -263,7 +263,6 @@ from callhub.survey_templates import (
     create_survey_template,
     update_survey_template,
     delete_survey_template,
-    create_question_template
 )
 
 from callhub.questions import (
@@ -2680,36 +2679,6 @@ def delete_survey_template_tool(
             params["accountName"] = account
         
         return delete_survey_template(params)
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
-
-
-@server.tool(name="createQuestionTemplate", description="Create a new question template for a survey template.")
-def create_question_template_tool(
-    account: Optional[str] = None,
-    type: str = None,
-    question: str = None,
-    survey_template_id: str = None,
-    question_name: Optional[str] = None,
-    is_initial_message: Optional[bool] = None
-) -> dict:
-    try:
-        if not all([type, question, survey_template_id]):
-            return {"isError": True, "content": [{"type": "text", "text": "type, question, and survey_template_id are required"}]}
-        
-        params = {
-            "type": type,
-            "question": question,
-            "survey_template_id": survey_template_id
-        }
-        if account:
-            params["accountName"] = account
-        if question_name:
-            params["question_name"] = question_name
-        if is_initial_message is not None:
-            params["is_initial_message"] = is_initial_message
-        
-        return create_question_template(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
