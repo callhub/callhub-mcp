@@ -20,7 +20,7 @@ def get_shortened_url(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'shortCode' is required."}]}
 
     client = McpApiClient(params.get("accountName"))
-    return client.call(f"v2/shortened-urls/{short_code}/", "GET")
+    return client.call(f"/v2/shortened-urls/{short_code}/", "GET")
 
 
 def list_shortened_urls(params: Dict[str, Any]) -> Dict[str, Any]:
