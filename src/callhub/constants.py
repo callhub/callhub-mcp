@@ -43,7 +43,7 @@ class ENDPOINTS:
     TEMPLATES = "/v1/templates/"
     USERS = "/v1/users/"
     VB_CAMPAIGN = "/v1/vb_campaign/"
-    VB_TEMPLATES = "/v1/vb_templates/"
+    VB_TEMPLATES = "/v1/vb_template/"
     VOICE_BROADCASTS = "/v1/voice_broadcasts/"
     WEBHOOKS = "/v1/webhooks/"
     SMS_CAMPAIGN_REPORT_EXPORT = "/v1/sms_campaign/sms_report/export/"
