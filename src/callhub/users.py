@@ -1,9 +1,13 @@
 # File: src/callhub/users.py
 
-from .auth import get_account_config
-from .utils import api_call, build_url
+import sys
+from typing import Dict, Any
+from datetime import datetime
 
-def list_users(params):
+from .client import McpApiClient
+from .constants import ENDPOINTS
+
+def list_users(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Retrieve a list of all users in the CallHub account.
     
@@ -14,14 +18,10 @@ def list_users(params):
     Returns:
         dict: A dictionary containing the API response with user data
     """
-    _, api_key, base_url = get_account_config(params.get("accountName"))
-    headers = {"Authorization": f"Token {api_key}"}
-    url = build_url(base_url, "v1/users/")
-    
-    result = api_call("GET", url, headers)
-    return result
+    client = McpApiClient(params.get("accountName"))
+    return client.call(ENDPOINTS.USERS, "GET")
 
-def get_credit_usage(params):
+def get_credit_usage(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Retrieve credit usage details for the CallHub account.
     
@@ -36,9 +36,7 @@ def get_credit_usage(params):
     Returns:
         dict: A dictionary containing the API response with credit usage data
     """
-    _, api_key, base_url = get_account_config(params.get("accountName"))
-    headers = {"Authorization": f"Token {api_key}", "Content-Type": "application/json"}
-    url = build_url(base_url, "v2/credits_usage/")
+    client = McpApiClient(params.get("accountName"))
     
     # Prepare the request payload
     payload = {}
@@ -60,75 +58,17 @@ def get_credit_usage(params):
     if params.get("campaign_type") is not None:
         payload["campaign_type"] = params.get("campaign_type")
         
-    # generate_csv is required (whether output is CSV or JSON)
-    generate_csv = False
-    if params.get("generate_csv") is not None:
-        generate_csv = params.get("generate_csv")
-        payload["generate_csv"] = generate_csv
-    else:
-        # Default to JSON (False) if not specified
-        payload["generate_csv"] = False
+    generate_csv = params.get("generate_csv", False)
+    payload["generate_csv"] = generate_csv
     
-    # Make the API call without using the util function for more control
-    import requests
-    import sys
-    
-    try:
-        sys.stderr.write(f"[callhub] POST request to {url}\n")
-        sys.stderr.write(f"[callhub] Payload: {payload}\n")
-        
-        response = requests.post(url, headers=headers, json=payload)
-        
-        # Handle error responses
-        if response.status_code >= 400:
-            sys.stderr.write(f"[callhub] API error: {response.status_code} {response.reason}\n")
-            try:
-                sys.stderr.write(f"[callhub] Response body: {response.text}\n")
-            except:
-                pass
-            response.raise_for_status()
-        
-        # Handle CSV response
-        if generate_csv and response.text:
-            # Return CSV data as is
-            return {
-                "format": "csv",
-                "data": response.text,
-                "success": True
-            }
-        # Handle JSON response
-        elif response.text:
-            try:
-                return response.json()
-            except Exception as e:
-                # If can't parse as JSON but has content, return text
-                return {
-                    "format": "text",
-                    "data": response.text,
-                    "success": True
-                }
-        else:
-            # Empty response
-            return {"success": True, "message": "Operation successful but no data returned"}
-            
-    except requests.exceptions.RequestException as e:
-        # Build a user-friendly error response
-        status_code = e.response.status_code if hasattr(e, 'response') and e.response else None
-        
-        # Special handling for rate limiting errors
-        if status_code == 429:
-            return {
-                "isError": True, 
-                "content": [{
-                    "type": "text", 
-                    "text": f"Rate limit exceeded (429). The API has a limit of calls per minute."
-                }]
-            }
-        
-        # Generic error response
-        sys.stderr.write(f"[callhub] Request exception: {str(e)}\n")
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
-        
-    except Exception as e:
-        sys.stderr.write(f"[callhub] Unexpected error: {str(e)}\n")
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+    sys.stderr.write(f"[callhub] POST request to {ENDPOINTS.CREDITS_USAGE}\n")
+    sys.stderr.write(f"[callhub] Payload: {payload}\n")
+    result = client.call(ENDPOINTS.CREDITS_USAGE, "POST", body=payload)
+
+    if generate_csv and not result.get("isError"):
+        csv_data = result.get("message", "")
+        if not csv_data and result.get("content"):
+            csv_data = result["content"][0].get("text", "")
+        return {"format": "csv", "data": csv_data, "success": True}
+
+    return result

@@ -6,12 +6,12 @@ Contact management functions for CallHub API.
 import sys
 import json
 import requests
-from typing import Dict, List, Union, Optional, Any
+from typing import Dict, Any, List
 
-from .auth import get_account_config
-from .utils import build_url, api_call, get_auth_headers, retry_with_backoff
+from .client import McpApiClient
+from .constants import ENDPOINTS
 
-def list_contacts(params: dict) -> dict:
+def list_contacts(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     List contacts with optional pagination and filters.
     
@@ -26,42 +26,35 @@ def list_contacts(params: dict) -> dict:
     Returns:
         Dictionary with contact results
     """
-    account_name = params.pop("accountName", None)
-    _, api_key, base_url = get_account_config(account_name)
-
-    headers = get_auth_headers(api_key)
-
+    client = McpApiClient(params.get("accountName"))
+    
     results = []
     page = params.get("page", 1)
-    page_size = params.get("pageSize")
     all_pages = params.get("allPages", False)
 
     while True:
         query = {"page": page}
-        if page_size:
-            query["page_size"] = page_size
+        if params.get("pageSize"):
+            query["page_size"] = params["pageSize"]
         if f := params.get("filters"):
             query.update(f)
 
-        url = build_url(base_url, "v1/contacts/")
-        result = api_call("GET", url, headers, params=query)
+        result = client.call(ENDPOINTS.CONTACTS_V1, "GET", query=query)
         
-        if "isError" in result:
+        if result.get("isError"):
             return result
-            
-        data = result
 
         if all_pages:
-            results.extend(data.get("results", []))
-            if not data.get("next"):
+            results.extend(result.get("results", []))
+            if not result.get("next"):
                 break
             page += 1
         else:
-            return data
+            return result
 
     return {"results": results}
 
-def get_contact(params: dict) -> dict:
+def get_contact(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Retrieve a single contact by ID.
     
@@ -73,19 +66,14 @@ def get_contact(params: dict) -> dict:
     Returns:
         Dictionary with contact details
     """
-    account_name = params.get("accountName")
-    _, api_key, base_url = get_account_config(account_name)
-
     cid = params.get("contactId")
     if not cid:
-        raise ValueError("'contactId' is required.")
+        return {"isError": True, "content": [{"type": "text", "text": "'contactId' is required."}]}
 
-    headers = get_auth_headers(api_key)
-    url = build_url(base_url, "v1/contacts/{}/", cid)
-    
-    return api_call("GET", url, headers)
+    client = McpApiClient(params.get("accountName"))
+    return client.call(f"{ENDPOINTS.CONTACTS_V1}{cid}/", "GET")
 
-def create_contact(params: dict) -> dict:
+def create_contact(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Create a new contact.
     
@@ -98,20 +86,12 @@ def create_contact(params: dict) -> dict:
     Returns:
         Dictionary with created contact details
     """
-    account_name = params.pop("accountName", None)
-    _, api_key, base_url = get_account_config(account_name)
-
-    # Ensure contact number is provided
     if "contact" not in params:
-        raise ValueError("'contact' field is required to create a contact")
+        return {"isError": True, "content": [{"type": "text", "text": "'contact' field is required to create a contact"}]}
 
-    # Debug output to help troubleshoot
     sys.stderr.write(f"[callhub] Creating contact with params: {params}\n")
-
-    headers = get_auth_headers(api_key, "application/x-www-form-urlencoded")
-    url = build_url(base_url, "v1/contacts/")
-    
-    return api_call("POST", url, headers, data=params)
+    client = McpApiClient(params.pop("accountName", None))
+    return client.call(ENDPOINTS.CONTACTS_V1, "POST", form_data=params)
 
 def create_contacts_bulk(params: dict) -> dict:
     """
@@ -156,7 +136,9 @@ def create_contacts_bulk(params: dict) -> dict:
             - 16: Tags (comma-separated)
     """
     account_name = params.get("accountName")
+    from .auth import get_account_config
     _, api_key, base_url = get_account_config(account_name)
+    from .utils import build_url
     
     # Check for required phonebook_id
     phonebook_id = params.get("phonebook_id")
@@ -193,7 +175,7 @@ def create_contacts_bulk(params: dict) -> dict:
     
     # Setup the common headers for both file upload and URL cases
     headers = {"Authorization": f"Token {api_key}"}
-    url = build_url(base_url, "v1/contacts/bulk_create/")
+    url = build_url(base_url, ENDPOINTS.CONTACTS_BULK_CREATE)
     
     try:
         # Handle file upload
@@ -256,14 +238,8 @@ def create_contacts_bulk(params: dict) -> dict:
         
         # Handle rate limiting with a friendly message
         if resp.status_code == 429:
-            retry_after = None
-            if resp.headers:
-                retry_after = resp.headers.get('retry-after') or resp.headers.get('Retry-After')
-            
-            retry_msg = ""
-            if retry_after:
-                retry_msg = f" Please try again in {retry_after} seconds."
-            
+            retry_after = resp.headers.get('retry-after') or resp.headers.get('Retry-After')
+            retry_msg = f" Please try again in {retry_after} seconds." if retry_after else ""
             return {
                 "isError": True,
                 "content": [{
@@ -309,7 +285,7 @@ def create_contacts_bulk(params: dict) -> dict:
         # For all other request exceptions
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-def update_contact(params: dict) -> dict:
+def update_contact(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Update an existing contact identified by phone number.
     
@@ -326,20 +302,12 @@ def update_contact(params: dict) -> dict:
         This function may create a new contact if multiple contacts
         have the same phone number or under certain conditions.
     """
-    account_name = params.pop("accountName", None)
-    _, api_key, base_url = get_account_config(account_name)
-
-    # We need the contact phone number, not the ID
     phone = params.get("contact")
+    account_name = params.pop("accountName", None)
     if not phone:
-        raise ValueError("'contact' (phone number) is required to identify the contact.")
+        return {"isError": True, "content": [{"type": "text", "text": "'contact' (phone number) is required to identify the contact."}]}
 
-    # First, let's try to find if there are multiple contacts with this phone number
-    original_contact_ids = find_duplicate_contacts({
-        "accountName": account_name,
-        "contact": phone
-    })
-    
+    original_contact_ids = find_duplicate_contacts({"accountName": account_name, "contact": phone})
     if len(original_contact_ids) > 1:
         sys.stderr.write(f"[callhub] Warning: Multiple contacts ({len(original_contact_ids)}) found with phone {phone}\n")
     original_contact_id = original_contact_ids[0] if original_contact_ids else None
@@ -347,11 +315,8 @@ def update_contact(params: dict) -> dict:
     # Debug output to help troubleshoot
     sys.stderr.write(f"[callhub] Updating contact with phone {phone} with params: {params}\n")
 
-    headers = get_auth_headers(api_key, "application/x-www-form-urlencoded")
-    url = build_url(base_url, "v1/contacts/")
-
-    # Use api_call with retry logic
-    result = api_call("POST", url, headers, data=params)
+    client = McpApiClient(account_name)
+    result= client.call(ENDPOINTS.CONTACTS_V1, "POST", form_data=params)
     
     # Additional verification for update operations
     if "isError" not in result and "id" in result and original_contact_id:
@@ -368,7 +333,7 @@ def update_contact(params: dict) -> dict:
     
     return result
 
-def delete_contact(params: dict) -> dict:
+def delete_contact(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Delete a contact by ID.
     
@@ -380,25 +345,18 @@ def delete_contact(params: dict) -> dict:
     Returns:
         Dictionary with deletion status
     """
-    account_name = params.get("accountName")
-    _, api_key, base_url = get_account_config(account_name)
-
     cid = params.get("contactId")
     if not cid:
-        raise ValueError("'contactId' is required.")
+        return {"isError": True, "content": [{"type": "text", "text": "'contactId' is required."}]}
 
-    headers = get_auth_headers(api_key)
-    url = build_url(base_url, "v1/contacts/{}/", cid)
+    client = McpApiClient(params.get("accountName"))
+    result = client.call(f"{ENDPOINTS.CONTACTS_V1}{cid}/", "DELETE")
     
-    # Use the API call helper function
-    result = api_call("DELETE", url, headers)
-    
-    # If successful, return a standardized response
-    if "isError" not in result:
+    if not result.get("isError"):
         return {"deleted": True, "contactId": cid}
     return result
 
-def get_contact_fields(params: dict) -> dict:
+def get_contact_fields(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     List all available contact fields for this account.
     
@@ -409,15 +367,10 @@ def get_contact_fields(params: dict) -> dict:
     Returns:
         Dictionary with contact fields
     """
-    account_name = params.get("accountName")
-    _, api_key, base_url = get_account_config(account_name)
+    client = McpApiClient(params.get("accountName"))
+    return client.call(ENDPOINTS.CONTACTS_FIELDS, "GET")
 
-    headers = get_auth_headers(api_key)
-    url = build_url(base_url, "v1/contacts/fields/")
-    
-    return api_call("GET", url, headers)
-
-def find_duplicate_contacts(params: dict) -> List[str]:
+def find_duplicate_contacts(params: Dict[str, Any]) -> List[str]:
     """
     Find all contacts with the same phone number.
     
@@ -429,10 +382,9 @@ def find_duplicate_contacts(params: dict) -> List[str]:
     Returns:
         List of contact IDs that have the same phone number
     """
-    account_name = params.get("accountName")
     phone = params.get("contact")
     if not phone:
-        raise ValueError("'contact' (phone number) is required.")
+        return []
         
     # Get all contacts and filter by phone
     search_params = params.copy()

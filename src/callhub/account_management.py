@@ -5,12 +5,15 @@ Account management tools for CallHub API.
 
 import os
 import sys
+import requests
 from dotenv import load_dotenv, set_key, find_dotenv
 from .auth import _env_path, load_all_credentials, save_credentials
+from .utils import build_url, get_auth_headers, api_call
+from .constants import ENDPOINTS
 
 def add_account(account_name: str, username: str, api_key: str, base_url: str) -> dict:
     """
-    Add a new CallHub account to the .env file.
+    Add a new CallHub account to the .env file after verifying credentials.
     
     Args:
         account_name: Name of the account to add
@@ -22,6 +25,21 @@ def add_account(account_name: str, username: str, api_key: str, base_url: str) -
         dict: Status of the operation
     """
     try:
+        # --- Verification Step ---
+        # Before saving, make a simple API call to verify credentials are valid
+        verification_url = build_url(base_url, ENDPOINTS.USERS)
+        headers = get_auth_headers(api_key)
+        
+        response = api_call("GET", verification_url, headers)
+        
+        if response.get("isError"):
+            return {
+                "success": False,
+                "message": f"Failed to verify credentials for account '{account_name}'. Please check the API key and base URL.",
+                "error": response.get("content")
+            }
+        # --- End Verification Step ---
+
         # Normalize account name to lowercase
         account_name = account_name.lower()
         
@@ -29,7 +47,6 @@ def add_account(account_name: str, username: str, api_key: str, base_url: str) -
         try:
             creds = load_all_credentials()
         except FileNotFoundError:
-            # No existing credentials, create new dict
             creds = {}
         
         # Check if account already exists
@@ -52,8 +69,14 @@ def add_account(account_name: str, username: str, api_key: str, base_url: str) -
         
         return {
             "success": True,
-            "message": f"Account '{account_name}' added successfully.",
+            "message": f"Account '{account_name}' verified and added successfully.",
             "account": account_name
+        }
+    except requests.exceptions.RequestException as e:
+        return {
+            "success": False,
+            "message": f"A network error occurred while trying to verify the account: {e}. Please check the base URL and your connection.",
+            "error": str(e)
         }
     except Exception as e:
         return {

@@ -1,4 +1,4 @@
-# CallHub MCP (Model Control Panel)
+# CallHub
 
 A Claude-powered tool for managing CallHub resources via API
 
@@ -13,7 +13,7 @@ CallHub MCP is a Python-based tool that allows you to interact with the CallHub 
 - **Phonebook Management**: Create and manage phonebooks and their contacts
 - **Agent Management**: Create, activate, and manage agents
 - **Team Management**: Create and manage teams and team memberships
-- **Campaign Management**: Manage call center, voice broadcast, and SMS campaigns
+- **Campaign Management**: Manage call center, voice broadcast,P2P and SMS campaigns
 - **DNC Management**: Create and manage Do Not Call lists
 - **Bulk Operations**: Upload and process CSV files for bulk operations
 - **Error Handling**: Robust error handling with retries and rate limit awareness
@@ -22,7 +22,7 @@ CallHub MCP is a Python-based tool that allows you to interact with the CallHub 
 
 ### Prerequisites
 
-- Python 3.9+ 
+- Python 3.10+ 
 - An active CallHub account with API access
 - API credentials (username, API key, base URL)
 - Claude access with MCP capability
