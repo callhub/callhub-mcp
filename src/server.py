@@ -1,4 +1,75 @@
 #!/usr/bin/env python3
+"""CallHub MCP Server - Auto-builds dependencies if needed"""
+
+import sys
+from pathlib import Path
+
+import logging
+logger = logging.getLogger("callhub")
+# Add server/lib to Python path
+server_dir = Path( __file__ ).parent
+lib_path = server_dir / "lib"
+if lib_path.exists() :
+    sys.path.insert( 0 , str( lib_path ) )
+
+
+# Try to import required packages
+def check_dependencies () :
+    """Check if all dependencies are available"""
+    try :
+        import mcp
+        import pydantic
+        import dotenv
+        import requests
+        import selenium
+        import urllib3
+        return True
+    except ImportError as e :
+        logger.info( f"⚠️  Missing dependency: {e}" )
+        return False
+
+
+def build_dependencies () :
+    """Build dependencies into server/lib"""
+    import subprocess
+    import shutil
+
+    logger.info( "📦 Installing dependencies..." )
+
+    project_root = Path( __file__ ).parent.parent
+    lib_path = Path( __file__ ).parent / "lib"
+
+    # Clean and create lib directory
+    if lib_path.exists() :
+        shutil.rmtree( lib_path )
+    lib_path.mkdir( parents = True )
+
+    # Install dependencies
+    requirements_file = project_root / "requirements.txt"
+    if requirements_file.exists() :
+        subprocess.run( [ sys.executable , "-m" , "pip" , "install" , "--target" , str( lib_path ) , "-r" ,
+            str( requirements_file ) ] , check = True,stdout=sys.stderr, stderr=sys.stderr )
+        logger.info( "✅ Dependencies installed!" )
+        return True
+    else :
+        logger.info( "❌ requirements.txt not found!" )
+        return False
+
+
+# Check and build if needed
+if not check_dependencies() :
+    logger.info( "🔧 Dependencies missing. Building..." )
+    if build_dependencies() :
+        # Add lib to path again after building
+        sys.path.insert( 0 , str( lib_path ) )
+
+        # Verify dependencies are now available
+        if not check_dependencies() :
+            logger.info( "❌ Failed to install dependencies!" )
+            sys.exit( 1 )
+    else :
+        sys.exit( 1 )
+
 
 """
 CallHub MCP Server - Main Module
@@ -25,9 +96,8 @@ This is critical for ensuring code changes take effect before testing.
 # 3. Wait for explicit confirmation that the restart is complete
 # 4. Only then proceed with testing the changes
 
-import os
+
 import sys
-import json
 import datetime
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
@@ -47,7 +117,6 @@ from callhub.agents import (
     list_agents,
     get_agent,
     create_agent,
-    delete_agent,
     get_live_agents
 )
 
@@ -90,46 +159,43 @@ from callhub.dnc import (
     delete_dnc_list
 )
 
-from callhub.campaigns import (
-    list_call_center_campaigns,
-    update_call_center_campaign,
-    delete_call_center_campaign,
-    create_call_center_campaign,
-)
+from callhub.campaigns import (list_call_center_campaigns , update_call_center_campaign ,
+                               create_call_center_campaign , exportCampaignData  ,
+                               getCampaignStatsAdvanced , get_media_files   )
 
 from callhub.numbers import (
     list_rented_numbers,
     list_validated_numbers,
     rent_number,
+    get_area_codes,
+    get_number_rent_rates,
+    get_auto_unrent_settings,
+    update_auto_unrent_settings,
+    revalidate_numbers,
+    list_sms_only_numbers,
+    list_combined_sms_numbers,
+    auto_rent_sms_number
 )
 
-from callhub.voice_broadcasts import (
-    list_voice_broadcasts,
-    update_voice_broadcast,
-    delete_voice_broadcast
-)
+from callhub.vb_campaigns import (get_vb_campaign , create_vb_campaign_template ,
+                                  create_voice_broadcast_campaign ,list_voice_broadcasts )
 
 from callhub.sms_campaigns import (
     list_sms_campaigns,
-    update_sms_campaign,
-    delete_sms_campaign
+    update_sms_campaign
 )
 
-from callhub.p2p_campaigns import (
-    list_p2p_campaigns,
-    update_p2p_campaign,
-    delete_p2p_campaign
-)
+from callhub.p2p_campaigns import (list_p2p_campaigns , update_p2p_campaign ,
+                                   get_p2p_campaign_agents , add_agents_to_p2p_campaign , reassign_p2p_agents ,
+                                   get_p2p_surveys , create_p2p_campaign)
+
 
 from callhub.sms_broadcasts import (
-    list_sms_broadcasts,
-    update_sms_broadcast,
-    delete_sms_broadcast
+    create_sms_broadcast,
+    get_sms_broadcast,
+    update_sms_broadcast
 )
 
-from callhub.agent_activation import (
-    export_agent_activation_urls
-)
 
 from callhub.agent_activation_manual import (
     generate_export_url,
@@ -139,15 +205,10 @@ from callhub.agent_activation_manual import (
 from callhub.csv_processor import (
     process_uploaded_csv,
     process_agent_activation_csv_from_file,
-    find_file,
-    smart_file_process
 )
-
 from callhub.browser_automation import (
-    export_agent_activation_urls_browser,
     activate_agents_with_password,
     process_local_activation_csv,
-    parse_activation_csv
 )
 
 from callhub.phonebooks import (
@@ -190,14 +251,54 @@ from callhub.webhooks import (
 
 # Import our new batch activation tools
 from callhub.mcp_tools.batch_activation_tools import (
-    process_uploaded_activation_csv,
     prepare_agent_activation,
     activate_agents_with_batch_password,
     get_activation_status,
     reset_activation_state
 )
 
+from callhub.survey_templates import (
+    list_survey_templates,
+    get_survey_template,
+    create_survey_template,
+    update_survey_template,
+    delete_survey_template,
+)
+
+from callhub.questions import (
+    list_questions,
+    get_question
+)
+
+from callhub.integration_fields import (
+    list_integration_fields,
+    get_integration_field
+)
+
+from callhub.urls import (
+    get_shortened_url,
+    list_shortened_urls
+)
+
+from callhub.api_utils import (
+    getApiSchema
+)
+
 from callhub.utils import parse_input_fields
+from callhub.relational_organizing import (
+    create_relational_organizing_campaign,
+    duplicate_relational_organizing_campaign,
+    assign_agents_to_relational_organizing_campaign,
+    update_relational_organizing_campaign,
+    get_relational_organizing_campaign,
+    update_relational_organizing_campaign_status,
+)
+from callhub.sms_broadcasts import duplicate_sms_broadcast
+from callhub.p2p_campaigns import duplicate_p2p_campaign
+from callhub.campaigns import add_agents_to_power_campaign, duplicate_power_campaign, export_power_campaign
+from callhub.vb_campaigns import duplicate_vb_campaign
+from callhub.sms_campaigns import export_sms_report
+
 
 # Load .env (for CALLHUB_ACCOUNT, etc.)
 load_dotenv()
@@ -327,17 +428,6 @@ def create_agent_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="deleteAgent", description="Delete an agent by ID.")
-def delete_agent_tool(account: Optional[str] = None, agentId: Optional[str] = None) -> dict:
-    try:
-        params = {}
-        if account:
-            params["accountName"] = account
-        if agentId:
-            params["agentId"] = agentId
-        return delete_agent(params)
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
 @server.tool(name="getLiveAgents", description="Get a list of all agents currently connected to any campaign.")
@@ -1065,23 +1155,6 @@ def update_call_center_campaign_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="deleteCallCenterCampaign", description="Delete a call center campaign by ID.")
-def delete_call_center_campaign_tool(
-    account: Optional[str] = None,
-    campaignId: str = None
-) -> dict:
-    try:
-        # Validate required parameters
-        if not campaignId:
-            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
-
-        params = {"campaignId": campaignId}
-        if account:
-            params["accountName"] = account
-
-        return delete_call_center_campaign(params)
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
 @server.tool(name="createCallCenterCampaign", description="Create a new call center campaign with a complex script structure.")
@@ -1099,6 +1172,109 @@ def create_call_center_campaign_tool(
             params["accountName"] = account
 
         return create_call_center_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="duplicatePowerCampaign", description="Duplicates a PowerCampaign with specified parameters.")
+def duplicate_power_campaign_tool(
+    campaign_id: int,
+    phonebook_ids: List[int],
+    assign_all_agents: bool,
+    account: Optional[str] = None,
+    target_account: Optional[str] = None,
+    name: Optional[str] = None,
+    callerid: Optional[Dict] = None,
+    callerid_block: Optional[Dict] = None,
+    textid: Optional[Dict] = None,
+    dialin: Optional[Dict] = None
+) -> dict:
+    try:
+        params = {
+            "campaign_id": campaign_id,
+            "phonebook_ids": phonebook_ids,
+            "assign_all_agents": assign_all_agents,
+        }
+        if account:
+            params["accountName"] = account
+        if target_account:
+            params["target_account"] = target_account
+        if name:
+            params["name"] = name
+        if callerid:
+            params["callerid"] = callerid
+        if callerid_block:
+            params["callerid_block"] = callerid_block
+        if textid:
+            params["textid"] = textid
+        if dialin:
+            params["dialin"] = dialin
+
+        # This function is expected to be in callhub/utils.py
+        return duplicate_power_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+@server.tool(name="exportCampaignData", description="Export campaign data in specified format.")
+def export_campaign_data_tool(
+    account: Optional[str] = None,
+    campaignId: str = None,
+    format: str = "csv"
+) -> dict:
+    try:
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+        params = {"campaignId": campaignId, "format": format}
+        if account:
+            params["accountName"] = account
+
+        return exportCampaignData(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+@server.tool(name="getCampaignStatsAdvanced", description="Get enhanced campaign statistics.")
+def get_campaign_stats_advanced_tool(
+    account: Optional[str] = None,
+    campaignId: str = None,
+    includeDetails: bool = True
+) -> dict:
+    try:
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+        params = {"campaignId": campaignId, "includeDetails": includeDetails}
+        if account:
+            params["accountName"] = account
+
+        return getCampaignStatsAdvanced(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getMediaFiles", description="Retrieve a list of media files (audio, images, videos) uploaded to CallHub. Supports pagination.")
+def get_media_files_tool(
+    account: Optional[str] = None,
+    page: Optional[int] = None,
+    pageSize: Optional[int] = None,
+    file_type: Optional[str] = None, # 'audio', 'image', 'video'
+    search: Optional[str] = None # Search by file name
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if page is not None:
+            params["page"] = page
+        if pageSize is not None:
+            params["pageSize"] = pageSize
+        if file_type:
+            params["file_type"] = file_type
+        if search:
+            params["search"] = search
+
+        # Assuming a function `list_media_files` exists in `callhub.media`
+        return get_media_files(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -1141,50 +1317,50 @@ def list_voice_broadcast_campaigns_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="updateVoiceBroadcastCampaign", description="Update a voice broadcast campaign's status. Valid values: 'start', 'pause', 'abort', 'end' or 1-4 numerically.")
-def update_voice_broadcast_campaign_tool(
-    account: Optional[str] = None,
-    campaignId: str = None,
-    status: str = None # Kept as str to match other update_campaign tools, conversion happens in the module
-) -> dict:
-    try:
-        # Validate required parameters
-        if not campaignId:
-            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
-
-        if not status: # Basic check, detailed validation in module
-            return {
-                "isError": True,
-                "content": [{"type": "text", "text": "Valid 'status' is required: start, pause, abort, end, or 1-4 numerically"}]
-            }
-
-        params = {
-            "campaignId": campaignId,
-            "status": status
-        }
-        if account:
-            params["accountName"] = account # Corrected from params["account"] to params["accountName"]
-
-        return update_voice_broadcast(params)
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
-
-
-@server.tool(name="deleteVoiceBroadcastCampaign", description="Delete a voice broadcast campaign by ID.")
-def delete_voice_broadcast_campaign_tool(
+@server.tool(name="getVbCampaign", description="Get a voice broadcast campaign by ID.")
+def get_vb_campaign_tool(
     account: Optional[str] = None,
     campaignId: str = None
 ) -> dict:
     try:
-        # Validate required parameters
         if not campaignId:
             return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
-
         params = {"campaignId": campaignId}
         if account:
-            params["accountName"] = account # Corrected from params["account"] to params["accountName"]
+            params["accountName"] = account
+        return get_vb_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-        return delete_voice_broadcast(params)
+
+@server.tool(name="createVbCampaign", description="Create a new voice broadcast campaign.")
+def create_vb_campaign_tool(
+    account: Optional[str] = None,
+    campaign_data: dict = None
+) -> dict:
+    try:
+        if not campaign_data:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaign_data' is required."}]}
+        params = campaign_data.copy()
+        if account:
+            params["accountName"] = account
+        return create_voice_broadcast_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="createVbCampaignTemplate", description="Create a new voice broadcast campaign template.")
+def create_vb_campaign_template_tool(
+    account: Optional[str] = None,
+    template_data: dict = None
+) -> dict:
+    try:
+        if not template_data:
+            return {"isError": True, "content": [{"type": "text", "text": "'template_data' is required."}]}
+        params = {"template_data": template_data}
+        if account:
+            params["accountName"] = account
+        return create_vb_campaign_template(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -1290,24 +1466,6 @@ def update_sms_campaign_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="deleteSmsCampaign", description="Delete an SMS campaign by ID.")
-def delete_sms_campaign_tool(
-    account: Optional[str] = None,
-    campaignId: str = None
-) -> dict:
-    try:
-        # Validate required parameters
-        if not campaignId:
-            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
-
-        params = {"campaignId": campaignId}
-        if account:
-            params["accountName"] = account # Corrected from params["account"] to params["accountName"]
-
-        return delete_sms_campaign(params)
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
-
 
 # P2P Campaign Management Tools
 
@@ -1320,7 +1478,7 @@ def list_p2p_campaigns_tool(
     try:
         params = {}
         if account:
-            params["accountName"] = account
+            params["account"] = account
         if page is not None:
             params["page"] = page
         if pageSize is not None:
@@ -1353,15 +1511,184 @@ def update_p2p_campaign_tool(
             "status": status
         }
         if account:
-            params["accountName"] = account
+            params["account"] = account
 
         return update_p2p_campaign(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="deleteP2pCampaign", description="Delete a P2P campaign by ID.")
-def delete_p2p_campaign_tool(
+
+
+
+@server.tool(name="getP2pCampaignAgents", description="Get agents for a P2P campaign.")
+def get_p2p_campaign_agents_tool(
+    account: Optional[str] = None,
+    campaignId: str = None
+) -> dict:
+    try:
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+        params = {"campaignId": campaignId}
+        if account:
+            params["account"] = account
+
+        return get_p2p_campaign_agents(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="addAgentsToP2pCampaign", description="Add agents to a P2P campaign.")
+def add_agents_to_p2p_campaign_tool(
+    account: Optional[str] = None,
+    campaignId: str = None,
+    agentIds: List[str] = None
+) -> dict:
+    try:
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+        if not agentIds:
+            return {"isError": True, "content": [{"type": "text", "text": "'agentIds' is required."}]}
+
+        params = {"campaignId": campaignId, "agentIds": agentIds}
+        if account:
+            params["account"] = account
+
+        return add_agents_to_p2p_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="reassignP2pAgents", description="Reassign agents in a P2P campaign.")
+def reassign_p2p_agents_tool(
+    account: Optional[str] = None,
+    campaignId: str = None,
+    reassignData: dict = None
+) -> dict:
+    try:
+        if not campaignId:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+        params = {"campaignId": campaignId, "reassignData": reassignData or {}}
+        if account:
+            params["account"] = account
+
+        return reassign_p2p_agents(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getP2pSurveys", description="Get surveys for a P2P campaign.")
+def get_p2p_surveys_tool(
+    account: Optional[str] = None,
+    campaignId: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if campaignId:
+            params["campaignId"] = campaignId
+        if account:
+            params["account"] = account
+
+        return get_p2p_surveys(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+
+
+@server.tool(name="createSmsBroadcast", description="Create a new SMS broadcast campaign.")
+def create_sms_broadcast_tool(
+    account: Optional[str] = None,
+    name: str = None,
+    text_message: str = None,
+    phonebook: list = None,
+    callerid: str = None,
+    callerid_choice: Optional[str] = "exists",
+    description: Optional[str] = None,
+    startingdate: Optional[str] = None,
+    expirationdate: Optional[str] = None,
+    daily_start_time: Optional[str] = None,
+    daily_stop_time: Optional[str] = None,
+    opt_out_language: Optional[str] = "",
+    help_compliance_message: Optional[str] = "",
+    monday: Optional[str] = None,
+    tuesday: Optional[str] = None,
+    wednesday: Optional[str] = None,
+    thursday: Optional[str] = None,
+    friday: Optional[str] = None,
+    saturday: Optional[str] = None,
+    sunday: Optional[str] = None,
+    timezone_choices: Optional[str] = None,
+    use_contact_tz: Optional[str] = "campaign_timezone",
+    intervalretry: Optional[int] = 5,
+    maxretry: Optional[int] = 0,
+    auto_replies: Optional[list] = None,
+    base_short_url: Optional[list] = None,
+    dont_text_dnc: Optional[bool] = False,
+    dont_text_litigator: Optional[bool] = True
+) -> dict:
+    try:
+        # Validate required parameters
+        if not name:
+            return {"isError": True, "content": [{"type": "text", "text": "'name' is required."}]}
+        if not text_message:
+            return {"isError": True, "content": [{"type": "text", "text": "'text_message' is required."}]}
+        if not phonebook:
+            return {"isError": True, "content": [{"type": "text", "text": "'phonebook' is required."}]}
+        if not callerid:
+            return {"isError": True, "content": [{"type": "text", "text": "'callerid' is required."}]}
+
+        params = {
+            "name": name,
+            "text_message": text_message,
+            "phonebook": phonebook,
+            "callerid": callerid,
+            "callerid_choice": callerid_choice,
+            "opt_out_language": opt_out_language,
+            "help_compliance_message": help_compliance_message,
+            "use_contact_tz": use_contact_tz,
+            "intervalretry": intervalretry,
+            "maxretry": maxretry,
+            "dont_text_dnc": dont_text_dnc,
+            "dont_text_litigator": dont_text_litigator
+        }
+
+        # Add optional parameters if provided
+        if account:
+            params["account"] = account
+        if description:
+            params["description"] = description
+        if startingdate:
+            params["startingdate"] = startingdate
+        if expirationdate:
+            params["expirationdate"] = expirationdate
+        if daily_start_time:
+            params["daily_start_time"] = daily_start_time
+        if daily_stop_time:
+            params["daily_stop_time"] = daily_stop_time
+        if timezone_choices:
+            params["timezone_choices"] = timezone_choices
+        if auto_replies:
+            params["auto_replies"] = auto_replies
+        if base_short_url:
+            params["base_short_url"] = base_short_url
+
+        # Add weekday scheduling parameters
+        weekdays = {"monday": monday, "tuesday": tuesday, "wednesday": wednesday,
+                   "thursday": thursday, "friday": friday, "saturday": saturday, "sunday": sunday}
+        for day, value in weekdays.items():
+            if value:
+                params[day] = value
+
+        return create_sms_broadcast(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getSmsBroadcast", description="Get details of an SMS broadcast campaign.")
+def get_sms_broadcast_tool(
     account: Optional[str] = None,
     campaignId: str = None
 ) -> dict:
@@ -1370,33 +1697,13 @@ def delete_p2p_campaign_tool(
         if not campaignId:
             return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
 
-        params = {"campaignId": campaignId}
+        params = {
+            "campaignId": campaignId
+        }
         if account:
-            params["accountName"] = account
+            params["account"] = account
 
-        return delete_p2p_campaign(params)
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
-
-
-# SMS Broadcast Management Tools
-
-@server.tool(name="listSmsBroadcasts", description="List all SMS broadcast campaigns with optional pagination.")
-def list_sms_broadcasts_tool(
-    account: Optional[str] = None,
-    page: Optional[int] = None,
-    pageSize: Optional[int] = None
-) -> dict:
-    try:
-        params = {}
-        if account:
-            params["accountName"] = account
-        if page is not None:
-            params["page"] = page
-        if pageSize is not None:
-            params["pageSize"] = pageSize
-
-        return list_sms_broadcasts(params)
+        return get_sms_broadcast(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -1429,22 +1736,21 @@ def update_sms_broadcast_tool(
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-
-@server.tool(name="deleteSmsBroadcast", description="Delete an SMS broadcast campaign by ID.")
-def delete_sms_broadcast_tool(
+@server.tool(name="createP2PCampaign", description="Create a new P2P campaign with a complex script structure.")
+def dsafdsf(
     account: Optional[str] = None,
-    campaignId: str = None
+    campaign_data: dict = None
 ) -> dict:
     try:
         # Validate required parameters
-        if not campaignId:
-            return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+        if not campaign_data:
+            return {"isError": True, "content": [{"type": "text", "text": "'campaign_data' is required."}]}
 
-        params = {"campaignId": campaignId}
+        params = {"campaign_data": campaign_data}
         if account:
             params["accountName"] = account
 
-        return delete_sms_broadcast(params)
+        return create_p2p_campaign(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -1709,7 +2015,258 @@ def list_dnc_lists_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="updateDncList", description="Update an existing DNC list by ID.")
+@server.tool(name="createRelationalCampaign", description="Create a new relational organizing campaign.")
+def create_relational_campaign_tool(
+    account: Optional[str] = None,
+    name: str = None,
+    brief: str = None,
+    phonebook_ids: list = None,
+    user_tag_ids: list = None,
+    default_outreach_medium: int = None,
+    agent_assignment_choice: int = None,
+    team_ids: list = None,
+    starting_date: str = None,
+    end_date: str = None,
+    timezone: str = None,
+    survey_id: int = None,
+) -> dict:
+    try:
+        params = {
+            "name": name,
+            "brief": brief,
+            "phonebook_ids": phonebook_ids,
+            "user_tag_ids": user_tag_ids,
+            "default_outreach_medium": default_outreach_medium,
+            "agent_assignment_choice": agent_assignment_choice,
+            "team_ids": team_ids,
+            "starting_date": starting_date,
+            "end_date": end_date,
+            "timezone": timezone,
+            "survey_id": survey_id,
+        }
+        if account:
+            params["accountName"] = account
+        return create_relational_organizing_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="duplicateRelationalCampaign", description="Duplicate a relational organizing campaign.")
+def duplicate_relational_campaign_tool(
+    account: Optional[str] = None, campaign_id: int = None
+) -> dict:
+    try:
+        params = {"campaign_id": campaign_id}
+        if account:
+            params["accountName"] = account
+        return duplicate_relational_organizing_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(
+    name="assignAgentsToRelationalCampaign",
+    description="Assign or remove agents to/from a relational organizing campaign.",
+)
+def assign_agents_to_relational_campaign_tool(
+    account: Optional[str] = None, campaign_id: int = None, agent_ids_to_assign: list = None, agent_ids_to_remove: list = None
+) -> dict:
+    try:
+        params = {"campaign_id": campaign_id, "agent_ids_to_assign": agent_ids_to_assign, "agent_ids_to_remove": agent_ids_to_remove}
+        if account:
+            params["accountName"] = account
+        return assign_agents_to_relational_organizing_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+
+@server.tool(name="duplicateSmsBroadcast", description="Duplicate an SMS broadcast campaign.")
+def duplicate_sms_broadcast_tool(
+    account: Optional[str] = None, campaign_id: int = None
+) -> dict:
+    try:
+        params = {"campaignId": campaign_id}
+        if account:
+            params["accountName"] = account
+        return duplicate_sms_broadcast(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="duplicateP2pCampaign", description="Duplicate a P2P campaign.")
+def duplicate_p2p_campaign_tool(
+    account: Optional[str] = None, campaign_id: int = None
+) -> dict:
+    try:
+        params = {"campaignId": campaign_id}
+        if account:
+            params["accountName"] = account
+        return duplicate_p2p_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="addAgentsToPowerCampaign", description="Add agents to a power campaign.")
+def add_agents_to_power_campaign_tool(
+    account: Optional[str] = None, campaign_id: int = None, agent_ids: list = None
+) -> dict:
+    try:
+        params = {"campaignId": campaign_id, "agentIds": agent_ids}
+        if account:
+            params["accountName"] = account
+        return add_agents_to_power_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="duplicateVbCampaign", description="Duplicate a voice broadcast campaign.")
+def duplicate_vb_campaign_tool(
+    account: Optional[str] = None, campaign_id: int = None
+) -> dict:
+    try:
+        params = {"campaignId": campaign_id}
+        if account:
+            params["accountName"] = account
+        return duplicate_vb_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="updateRelationalCampaign", description="Update a relational organizing campaign.")
+def update_relational_campaign_tool(
+    account: Optional[str] = None,
+    campaign_id: int = None,
+    name: str = None,
+    brief: str = None,
+    phonebook_ids: list = None,
+    user_tag_ids: list = None,
+    default_outreach_medium: int = None,
+    agent_assignment_choice: int = None,
+    team_ids: list = None,
+    starting_date: str = None,
+    end_date: str = None,
+    timezone: str = None,
+    survey_id: int = None,
+) -> dict:
+    try:
+        params = {
+            "campaign_id": campaign_id,
+            "name": name,
+            "brief": brief,
+            "phonebook_ids": phonebook_ids,
+            "user_tag_ids": user_tag_ids,
+            "default_outreach_medium": default_outreach_medium,
+            "agent_assignment_choice": agent_assignment_choice,
+            "team_ids": team_ids,
+            "starting_date": starting_date,
+            "end_date": end_date,
+            "timezone": timezone,
+            "survey_id": survey_id,
+        }
+        if account:
+            params["accountName"] = account
+        return update_relational_organizing_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getRelationalCampaign", description="Get a relational organizing campaign.")
+def get_relational_campaign_tool(
+    account: Optional[str] = None, campaign_id: int = None
+) -> dict:
+    try:
+        params = {"campaign_id": campaign_id}
+        if account:
+            params["accountName"] = account
+        return get_relational_organizing_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="updateRelationalCampaignStatus", description="Update the status of a relational organizing campaign.")
+def update_relational_campaign_status_tool(
+    account: Optional[str] = None, campaign_id: int = None, status: str = None
+) -> dict:
+    try:
+        params = {"campaign_id": campaign_id, "status": status}
+        if account:
+            params["accountName"] = account
+        return update_relational_organizing_campaign_status(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="exportSmsReport", description="Export an SMS report for a campaign.")
+
+
+def export_sms_report_tool(
+
+
+    account: Optional[str] = None, campaign_id: int = None
+
+
+) -> dict:
+
+
+    try:
+
+
+        params = {"campaign_id": campaign_id}
+
+
+        if account:
+
+
+            params["accountName"] = account
+
+
+        return export_sms_report(params)
+
+
+    except Exception as e:
+
+
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+
+
+
+
+
+
+@server.tool(name="exportPowerCampaign", description="Export a power campaign.")
+
+
+def export_power_campaign_tool(
+
+
+    account: Optional[str] = None, campaign_id: int = None
+
+
+) -> dict:
+
+
+    try:
+
+
+        params = {"campaignId": campaign_id}
+
+
+        if account:
+
+
+            params["accountName"] = account
+
+
+        return export_power_campaign(params)
+
+
+    except Exception as e:
+
+
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}@server.tool(name="updateDncList", description="Update an existing DNC list by ID.")
 def update_dnc_list_tool(
     account: Optional[str] = None,
     listId: str = None, # DNC List ID
@@ -2031,7 +2588,367 @@ def prepare_agent_activation_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
+# Survey Template Management Tools
+
+@server.tool(name="listSurveyTemplates", description="List all survey templates for the authenticated user.")
+def list_survey_templates_tool(
+    account: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        return list_survey_templates(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getSurveyTemplate", description="Get details for a specific survey template by ID.")
+def get_survey_template_tool(
+    account: Optional[str] = None,
+    templateId: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if templateId:
+            params["templateId"] = templateId
+        return get_survey_template(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="createSurveyTemplate", description="Create a new survey template with questions. Pass questions as a list of dictionaries with 'type', 'question', and optional 'question_name', 'is_initial_message' fields.")
+def create_survey_template_tool(
+    account: Optional[str] = None,
+    label: str = None,
+    questions: List[Dict[str, Any]] = None
+) -> dict:
+    try:
+        if not label:
+            return {"isError": True, "content": [{"type": "text", "text": "label is required"}]}
+        
+        params = {
+            "label": label,
+            "questions": questions or []
+        }
+        if account:
+            params["accountName"] = account
+        
+        return create_survey_template(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="updateSurveyTemplate", description="Update an existing survey template.")
+def update_survey_template_tool(
+    account: Optional[str] = None,
+    templateId: str = None,
+    label: Optional[str] = None,
+    questions: Optional[List[Dict[str, Any]]] = None
+) -> dict:
+    try:
+        if not templateId:
+            return {"isError": True, "content": [{"type": "text", "text": "templateId is required"}]}
+        
+        params = {"templateId": templateId}
+        if account:
+            params["accountName"] = account
+        if label:
+            params["label"] = label
+        if questions:
+            params["questions"] = questions
+        
+        return update_survey_template(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="deleteSurveyTemplate", description="Delete a survey template by ID.")
+def delete_survey_template_tool(
+    account: Optional[str] = None,
+    templateId: str = None
+) -> dict:
+    try:
+        if not templateId:
+            return {"isError": True, "content": [{"type": "text", "text": "templateId is required"}]}
+        
+        params = {"templateId": templateId}
+        if account:
+            params["accountName"] = account
+        
+        return delete_survey_template(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+# Questions Management Tools
+
+@server.tool(name="listQuestions", description="List all questions with optional type filtering (PDI_QUESTION, VAN_QUESTION).")
+def list_questions_tool(
+    account: Optional[str] = None,
+    type: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if type:
+            params["type"] = type
+        
+        return list_questions(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getQuestion", description="Get details for a specific question by ID.")
+def get_question_tool(
+    account: Optional[str] = None,
+    questionId: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if questionId:
+            params["questionId"] = questionId
+        
+        return get_question(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+# Integration Fields Management Tools
+
+@server.tool(name="listIntegrationFields", description="List all integration fields.")
+def list_integration_fields_tool(
+    account: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        
+        return list_integration_fields(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getIntegrationField", description="Get details for a specific integration field by ID.")
+def get_integration_field_tool(
+    account: Optional[str] = None,
+    fieldId: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if fieldId:
+            params["fieldId"] = fieldId
+        
+        return get_integration_field(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+# Extended Number Management Tools
+
+@server.tool(name="getAreaCodes", description="Get area codes for a specific country.")
+def get_area_codes_tool(
+    account: Optional[str] = None,
+    country_iso: str = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if country_iso:
+            params["country_iso"] = country_iso
+        
+        return get_area_codes(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getNumberRentRates", description="Get number rent rates for a specific country.")
+def get_number_rent_rates_tool(
+    account: Optional[str] = None,
+    country_iso: str = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if country_iso:
+            params["country_iso"] = country_iso
+        
+        return get_number_rent_rates(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getAutoUnrentSettings", description="Get auto-unrent settings.")
+def get_auto_unrent_settings_tool(
+    account: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        
+        return get_auto_unrent_settings(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="updateAutoUnrentSettings", description="Update auto-unrent settings.")
+def update_auto_unrent_settings_tool(
+    account: Optional[str] = None,
+    auto_unrent_enabled: Optional[bool] = None,
+    threshold_days: Optional[int] = None,
+    numbers_to_exclude: Optional[List[str]] = None,
+    email_reminders_enabled: Optional[bool] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if auto_unrent_enabled is not None:
+            params["auto_unrent_enabled"] = auto_unrent_enabled
+        if threshold_days is not None:
+            params["threshold_days"] = threshold_days
+        if numbers_to_exclude is not None:
+            params["numbers_to_exclude"] = numbers_to_exclude
+        if email_reminders_enabled is not None:
+            params["email_reminders_enabled"] = email_reminders_enabled
+        
+        return update_auto_unrent_settings(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="revalidateNumbers", description="Revalidate phone numbers.")
+def revalidate_numbers_tool(
+    account: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        
+        return revalidate_numbers(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="listSmsOnlyNumbers", description="List SMS-only rented numbers.")
+def list_sms_only_numbers_tool(
+    account: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        
+        return list_sms_only_numbers(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="listCombinedSmsNumbers", description="List combined validated and rented SMS numbers.")
+def list_combined_sms_numbers_tool(
+    account: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        
+        return list_combined_sms_numbers(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="autoRentSmsNumber", description="Auto-rent SMS number.")
+def auto_rent_sms_number_tool(
+    account: Optional[str] = None,
+    country_iso: str = None,
+    feature: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if country_iso:
+            params["country_iso"] = country_iso
+        if feature:
+            params["feature"] = feature
+        
+        return auto_rent_sms_number(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
 # openTerminalWithLogs function removed for security reasons
+
+
+# Shortened URL Management Tools
+
+
+
+@server.tool(name="getShortenedUrl", description="Get details of a shortened URL by its short code.")
+def get_shortened_url_tool(
+    account: Optional[str] = None,
+    shortCode: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if shortCode:
+            params["shortCode"] = shortCode
+        
+        return get_shortened_url(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="listShortenedUrls", description="List all shortened URLs with optional pagination.")
+def list_shortened_urls_tool(
+    account: Optional[str] = None,
+    page: Optional[int] = None,
+    pageSize: Optional[int] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if page is not None:
+            params["page"] = page
+        if pageSize is not None:
+            params["pageSize"] = pageSize
+        
+        return list_shortened_urls(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+# API Schema and Utilities Tools
+
+@server.tool(name="getApiSchema", description="Get the complete API schema documentation.")
+def get_api_schema_tool(
+    account: Optional[str] = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        
+        return getApiSchema(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
 
 
 if __name__ == "__main__":
