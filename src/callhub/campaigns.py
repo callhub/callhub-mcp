@@ -178,20 +178,26 @@ def create_call_center_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
             return {"isError": True, "content": [{"type": "text", "text": f"Invalid JSON in campaign_data: {str(e)}"}]}
     
     # Validate required fields
-    required_fields = ["name", "phonebook_ids", "callerid", "script"]
+    required_fields = ["name", "phonebook_ids", "callerid"]
     missing_fields = [field for field in required_fields if field not in campaign_data]
     if missing_fields:
         return {
             "isError": True, 
             "content": [{"type": "text", "text": f"Missing required fields: {', '.join(missing_fields)}"}]
         }
+
     
     # Validate and normalize script structure
     script = campaign_data.get("script", [])
-    if not isinstance(script, list) or len(script) == 0:
+    if script and not isinstance(script, list):
         return {
             "isError": True,
             "content": [{"type": "text", "text": "Script must be a non-empty array of script elements"}]
+        }
+    elif not campaign_data.get("template_id"):
+        return {
+            "isError" : True ,
+            "content" : [ { "type" : "text" , "text" : f"Missing required fields: script or template_id" } ]
         }
     
     # Normalize script structure based on Django API expectations
@@ -261,9 +267,9 @@ def create_call_center_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
                 normalized_element[key] = value
         
         normalized_script.append(normalized_element)
-    
-    # Update the campaign data with normalized script
-    campaign_data["script"] = normalized_script
+    if normalized_script:
+        # Update the campaign data with normalized script
+        campaign_data["script"] = normalized_script
     
     try:
         client = McpApiClient(params.get("accountName"))
