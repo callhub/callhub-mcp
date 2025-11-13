@@ -204,7 +204,7 @@ def add_agents_to_team(params: Dict[str, Any]) -> Dict[str, Any]:
     
     client = McpApiClient(params.get("accountName"))
     payload = {"agents": [int(agent_id) for agent_id in agent_ids]}
-    return client.call(f"{ENDPOINTS.TEAMS}{team_id}/agents/", "POST", body=payload)
+    return client.call(f"{ENDPOINTS.TEAMS}{team_id}/agents/", "PUT", body=payload)
 
 def remove_agents_from_team(params: Dict[str, Any]) -> Dict[str, Any]:
     """
