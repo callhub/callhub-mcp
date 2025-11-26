@@ -20,12 +20,15 @@ CallHub MCP is a Python-based tool that allows you to interact with the CallHub 
 
 ## Installation
 
+Download [Callhub](https://github.com/callhub/callhub-mcp/blob/main/callhub.mcpb) & open in claude ( Requires Python 3.10 )
+
 ### Prerequisites
 
 - Python 3.10+ 
 - An active CallHub account with API access
 - API credentials (username, API key, base URL)
 - Claude access with MCP capability
+
 
 ### Setup
 
