@@ -347,3 +347,51 @@ def duplicate_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as e:
         sys.stderr.write(f"[callhub] Error duplicating P2P campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+def get_collective_texting_questions(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Get questions for a Collective Texting (P2P) campaign.
+
+    Args:
+        params: Dictionary containing the following keys:
+            account (str, optional): The account name to use
+            campaign_id (str): The ID of the campaign
+
+    Returns:
+        dict: API response containing the campaign questions
+    """
+    campaign_id = params.get("campaign_id")
+    if not campaign_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'campaign_id' is required."}]}
+
+    try:
+        client = McpApiClient(params.get("account"))
+        return client.call(f"{ENDPOINTS.COLLECTIVE_TEXTING}campaigns/{campaign_id}/questions/", "GET")
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error getting collective texting questions: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+def get_collective_texting_saved_replies(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Get saved replies for a Collective Texting (P2P) campaign.
+
+    Args:
+        params: Dictionary containing the following keys:
+            account (str, optional): The account name to use
+            campaign_id (str): The ID of the campaign
+
+    Returns:
+        dict: API response containing the campaign saved replies
+    """
+    campaign_id = params.get("campaign_id")
+    if not campaign_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'campaign_id' is required."}]}
+
+    try:
+        client = McpApiClient(params.get("account"))
+        return client.call(f"{ENDPOINTS.COLLECTIVE_TEXTING}campaigns/{campaign_id}/saved_replies/", "GET")
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error getting collective texting saved replies: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

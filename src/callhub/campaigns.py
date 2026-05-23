@@ -455,3 +455,123 @@ def export_power_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
 
     client = McpApiClient(params.get("accountName"))
     return client.call(f"{ENDPOINTS.POWER_CAMPAIGN}{campaign_id}/export/", "GET")
+
+
+def delete_call_center_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Delete a call center campaign by ID.
+
+    Args:
+        params: Dictionary containing the following keys:
+            accountName (str, optional): The account name to use
+            campaignId (str): The ID of the campaign to delete
+
+    Returns:
+        dict: API response indicating success or failure
+    """
+    campaign_id = params.get("campaignId")
+    if not campaign_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+    try:
+        client = McpApiClient(params.get("accountName"))
+        return client.call(f"{ENDPOINTS.CALL_CENTER_CAMPAIGNS}{campaign_id}/", "DELETE")
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error deleting call center campaign: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+def upload_media_file(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Upload a media file to CallHub.
+
+    Args:
+        params: Dictionary containing the following keys:
+            accountName (str, optional): The account name to use
+            file_path (str): Local file path to upload
+            name (str, optional): Display name for the media file (max 150 chars)
+            generate_gif (bool, optional): Whether to generate a GIF thumbnail
+
+    Returns:
+        dict: API response containing media_file_id (sync) or job_id (async for video/GIF)
+    """
+    file_path = params.get("file_path")
+    if not file_path:
+        return {"isError": True, "content": [{"type": "text", "text": "'file_path' is required."}]}
+
+    if not os.path.exists(file_path):
+        return {"isError": True, "content": [{"type": "text", "text": f"File not found: {file_path}"}]}
+
+    allowed_extensions = {".mp3", ".wav", ".ogg", ".mp4", ".mov", ".3gp", ".3gpp",
+                          ".jpg", ".jpeg", ".png", ".gif"}
+    _, ext = os.path.splitext(file_path.lower())
+    if ext not in allowed_extensions:
+        return {
+            "isError": True,
+            "content": [{"type": "text", "text": f"Unsupported file extension '{ext}'. Allowed: {', '.join(sorted(allowed_extensions))}"}]
+        }
+
+    try:
+        from .auth import get_account_config
+        from .utils import build_url, get_auth_headers, api_call
+        import requests
+
+        account, api_key, base_url = get_account_config(params.get("accountName"))
+        url = build_url(base_url, ENDPOINTS.MEDIA_UPLOAD)
+        headers = get_auth_headers(api_key)
+        # Remove Content-Type so requests sets multipart boundary automatically
+        headers.pop("Content-Type", None)
+
+        file_name = params.get("name") or os.path.basename(file_path)
+        if len(file_name) > 150:
+            file_name = file_name[:150]
+
+        data = {}
+        if params.get("name"):
+            data["name"] = params["name"]
+        if params.get("generate_gif") is not None:
+            data["generate_gif"] = str(params["generate_gif"]).lower()
+
+        with open(file_path, "rb") as f:
+            files = {"file": (os.path.basename(file_path), f)}
+            verify_ssl = not any(h in url.lower() for h in ["0.0.0.0", "localhost", "127.0.0.1"])
+            resp = requests.post(url, headers=headers, files=files, data=data, verify=verify_ssl)
+
+        if resp.status_code >= 400:
+            try:
+                return {"isError": True, "content": [{"type": "text", "text": resp.text}]}
+            except Exception:
+                return {"isError": True, "content": [{"type": "text", "text": f"HTTP {resp.status_code}"}]}
+
+        try:
+            return resp.json()
+        except Exception:
+            return {"success": True, "message": resp.text}
+
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error uploading media file: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+def get_export_job_result(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Get the result of an export job by job ID.
+
+    Args:
+        params: Dictionary containing the following keys:
+            accountName (str, optional): The account name to use
+            job_id (str): The export job ID
+
+    Returns:
+        dict: API response containing the export job result
+    """
+    job_id = params.get("job_id")
+    if not job_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'job_id' is required."}]}
+
+    try:
+        client = McpApiClient(params.get("accountName"))
+        return client.call(f"{ENDPOINTS.EXPORT_DATA}export_{job_id}/", "GET")
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error getting export job result: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

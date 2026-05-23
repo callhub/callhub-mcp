@@ -72,3 +72,52 @@ def get_credit_usage(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"format": "csv", "data": csv_data, "success": True}
 
     return result
+
+
+def share_credits(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Share credits from an enterprise account to a subaccount.
+
+    Args:
+        params: Dictionary containing the following keys:
+            accountName (str, optional): The account name to use
+            subaccount (str): Username of the subaccount to receive credits
+            transfer_amount (int): Number of credits to transfer
+
+    Returns:
+        dict: API response from the share operation
+    """
+    subaccount = params.get("subaccount")
+    if not subaccount:
+        return {"isError": True, "content": [{"type": "text", "text": "'subaccount' is required."}]}
+
+    transfer_amount = params.get("transfer_amount")
+    if transfer_amount is None:
+        return {"isError": True, "content": [{"type": "text", "text": "'transfer_amount' is required."}]}
+
+    try:
+        client = McpApiClient(params.get("accountName"))
+        data = {"subaccount": subaccount, "transfer_amount": int(transfer_amount)}
+        return client.call(ENDPOINTS.SHARE_CREDITS, "POST", body=data)
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error sharing credits: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+def get_user_details(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Get details of the currently authenticated user.
+
+    Args:
+        params: Dictionary containing the following keys:
+            accountName (str, optional): The account name to use
+
+    Returns:
+        dict: API response containing user details
+    """
+    try:
+        client = McpApiClient(params.get("accountName"))
+        return client.call(ENDPOINTS.USER_DETAILS, "GET")
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error getting user details: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

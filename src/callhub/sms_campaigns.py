@@ -88,6 +88,30 @@ def update_sms_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
         sys.stderr.write(f"[callhub] Error updating SMS campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
+def delete_sms_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Delete an SMS campaign by ID.
+
+    Args:
+        params: Dictionary containing the following keys:
+            account (str, optional): The account name to use
+            campaignId (str): The ID of the campaign to delete
+
+    Returns:
+        dict: API response indicating success or failure
+    """
+    campaign_id = params.get("campaignId")
+    if not campaign_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+    try:
+        client = McpApiClient(params.get("account"))
+        return client.call(f"{ENDPOINTS.SMS_CAMPAIGNS}{campaign_id}/", "DELETE")
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error deleting SMS campaign: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
 def export_sms_report(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Export an SMS report for a campaign.

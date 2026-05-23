@@ -213,11 +213,11 @@ def update_dnc_list(params: Dict[str, Any]) -> Dict[str, Any]:
 def delete_dnc_list(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Delete a DNC list by ID.
-    
+
     Args:
         account (str, optional): The CallHub account name to use. Defaults to 'default'.
         listId (str, required): The ID of the DNC list to delete.
-        
+
     Returns:
         dict: API response indicating success or failure.
     """
@@ -227,3 +227,34 @@ def delete_dnc_list(params: Dict[str, Any]) -> Dict[str, Any]:
 
     client = McpApiClient(params.get("account"))
     return client.call(f"{ENDPOINTS.DNC_LISTS}{list_id}/", "DELETE")
+
+
+def add_contacts_to_suppression_list(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Add contacts to a suppression list.
+
+    Args:
+        params: Dictionary containing the following keys:
+            account (str, optional): The account name to use
+            list_id (str): The ID of the suppression list
+            contacts (list): List of dicts with 'phone_number' and 'mobile_number' keys
+
+    Returns:
+        dict: API response (207 Multi-Status)
+    """
+    list_id = params.get("list_id")
+    if not list_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'list_id' is required."}]}
+
+    contacts = params.get("contacts")
+    if not contacts or not isinstance(contacts, list):
+        return {"isError": True, "content": [{"type": "text", "text": "'contacts' must be a non-empty list."}]}
+
+    try:
+        client = McpApiClient(params.get("account"))
+        data = {"contacts": contacts}
+        return client.call(f"{ENDPOINTS.SUPPRESSION_LISTS}{list_id}/contacts/", "POST", body=data)
+    except Exception as e:
+        import sys
+        sys.stderr.write(f"[callhub] Error adding contacts to suppression list: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

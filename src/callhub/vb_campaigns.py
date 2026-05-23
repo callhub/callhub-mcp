@@ -183,6 +183,64 @@ def get_vb_campaign_defaults(params: Dict[str, Any]) -> Dict[str, Any]:
         }
     }
 
+def delete_voice_broadcast_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Delete a voice broadcast campaign by ID.
+
+    Args:
+        params: Dictionary containing the following keys:
+            accountName (str, optional): The account name to use
+            campaignId (str): The ID of the campaign to delete
+
+    Returns:
+        dict: API response indicating success or failure
+    """
+    campaign_id = params.get("campaignId")
+    if not campaign_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+    try:
+        client = McpApiClient(params.get("accountName"))
+        return client.call(f"{ENDPOINTS.VOICE_BROADCASTS}{campaign_id}/", "DELETE")
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error deleting voice broadcast campaign: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+def update_voice_broadcast_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Update a voice broadcast campaign by ID.
+
+    Args:
+        params: Dictionary containing the following keys:
+            accountName (str, optional): The account name to use
+            campaignId (str): The ID of the campaign to update
+            name (str, optional): New name for the campaign
+            status (int, optional): New status for the campaign
+            frequency (int, optional): Calls per minute
+
+    Returns:
+        dict: API response from the update operation
+    """
+    campaign_id = params.get("campaignId")
+    if not campaign_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+
+    try:
+        client = McpApiClient(params.get("accountName"))
+        data = {}
+        if params.get("name") is not None:
+            data["name"] = params["name"]
+        if params.get("status") is not None:
+            data["status"] = params["status"]
+        if params.get("frequency") is not None:
+            data["frequency"] = params["frequency"]
+        return client.call(f"{ENDPOINTS.VOICE_BROADCASTS}{campaign_id}/", "PUT", body=data)
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error updating voice broadcast campaign: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
 def validate_vb_campaign_params(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Validate VB campaign parameters before creation.

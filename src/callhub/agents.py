@@ -126,13 +126,62 @@ def create_agent(params: Dict[str, Any]) -> Dict[str, Any]:
 def get_live_agents(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Get a list of all agents currently connected to any campaign.
-    
+
     Args:
         params (dict): Dictionary containing:
             - accountName (optional): The CallHub account name to use
-    
+
     Returns:
         Dict: Response from the API with the list of connected agents
     """
     client = McpApiClient(params.get("accountName"))
     return client.call(ENDPOINTS.CAMPAIGN_AGENT_LIVE, "GET")
+
+
+def get_agent_key(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Get an auth token (agent key) for an agent by username and password.
+
+    Args:
+        params (dict): Dictionary containing:
+            - accountName (optional): The CallHub account name to use
+            - username (required): Agent username
+            - password (required): Agent password
+
+    Returns:
+        Dict: Response containing the agent auth token
+    """
+    username = params.get("username")
+    password = params.get("password")
+
+    if not username:
+        return {"isError": True, "content": [{"type": "text", "text": "'username' is required."}]}
+    if not password:
+        return {"isError": True, "content": [{"type": "text", "text": "'password' is required."}]}
+
+    try:
+        client = McpApiClient(params.get("accountName"))
+        data = {"username": username, "password": password}
+        return client.call(ENDPOINTS.AGENT_KEY, "POST", body=data)
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error getting agent key: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+def get_agent_status(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Get the current status of agents.
+
+    Args:
+        params (dict): Dictionary containing:
+            - accountName (optional): The CallHub account name to use
+
+    Returns:
+        Dict: Response containing agent status information
+    """
+    try:
+        client = McpApiClient(params.get("accountName"))
+        return client.call(ENDPOINTS.AGENT_STATUS, "GET")
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error getting agent status: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

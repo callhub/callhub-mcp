@@ -117,7 +117,9 @@ from callhub.agents import (
     list_agents,
     get_agent,
     create_agent,
-    get_live_agents
+    get_live_agents,
+    get_agent_key,
+    get_agent_status,
 )
 
 from callhub.teams import (
@@ -146,6 +148,8 @@ from callhub.contacts import (
 from callhub.users import (
     list_users,
     get_credit_usage,
+    share_credits,
+    get_user_details,
 )
 
 from callhub.dnc import (
@@ -156,12 +160,15 @@ from callhub.dnc import (
     create_dnc_list,
     list_dnc_lists,
     update_dnc_list,
-    delete_dnc_list
+    delete_dnc_list,
+    add_contacts_to_suppression_list,
 )
 
 from callhub.campaigns import (list_call_center_campaigns , update_call_center_campaign ,
                                create_call_center_campaign , exportCampaignData  ,
-                               getCampaignStatsAdvanced , get_media_files   )
+                               getCampaignStatsAdvanced , get_media_files ,
+                               delete_call_center_campaign , upload_media_file ,
+                               get_export_job_result )
 
 from callhub.numbers import (
     list_rented_numbers,
@@ -178,16 +185,19 @@ from callhub.numbers import (
 )
 
 from callhub.vb_campaigns import (get_vb_campaign , create_vb_campaign_template ,
-                                  create_voice_broadcast_campaign ,list_voice_broadcasts )
+                                  create_voice_broadcast_campaign , list_voice_broadcasts ,
+                                  delete_voice_broadcast_campaign , update_voice_broadcast_campaign )
 
 from callhub.sms_campaigns import (
     list_sms_campaigns,
-    update_sms_campaign
+    update_sms_campaign,
+    delete_sms_campaign,
 )
 
 from callhub.p2p_campaigns import (list_p2p_campaigns , update_p2p_campaign ,
                                    get_p2p_campaign_agents , add_agents_to_p2p_campaign , reassign_p2p_agents ,
-                                   get_p2p_surveys , create_p2p_campaign)
+                                   get_p2p_surveys , create_p2p_campaign ,
+                                   get_collective_texting_questions , get_collective_texting_saved_replies )
 
 
 from callhub.sms_broadcasts import (
@@ -3001,6 +3011,248 @@ def get_api_schema_tool(
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
+
+
+# ── P1: Campaign Delete Operations ───────────────────────────────────────────
+
+@server.tool(name="deleteCallCenterCampaign", description="Delete a call center campaign by ID.")
+def delete_call_center_campaign_tool(
+    account: Optional[str] = None,
+    campaignId: str = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if campaignId:
+            params["campaignId"] = campaignId
+        return delete_call_center_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="deleteVoiceBroadcastCampaign", description="Delete a voice broadcast campaign by ID.")
+def delete_voice_broadcast_campaign_tool(
+    account: Optional[str] = None,
+    campaignId: str = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if campaignId:
+            params["campaignId"] = campaignId
+        return delete_voice_broadcast_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="deleteSmsCampaign", description="Delete an SMS campaign by ID.")
+def delete_sms_campaign_tool(
+    account: Optional[str] = None,
+    campaignId: str = None
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["account"] = account
+        if campaignId:
+            params["campaignId"] = campaignId
+        return delete_sms_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+# ── P1: VB Campaign Update ────────────────────────────────────────────────────
+
+@server.tool(name="updateVoiceBroadcastCampaign", description="Update a voice broadcast campaign. Supports updating name, status, and frequency (calls per minute).")
+def update_voice_broadcast_campaign_tool(
+    account: Optional[str] = None,
+    campaignId: str = None,
+    name: Optional[str] = None,
+    status: Optional[int] = None,
+    frequency: Optional[int] = None,
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if campaignId:
+            params["campaignId"] = campaignId
+        if name is not None:
+            params["name"] = name
+        if status is not None:
+            params["status"] = status
+        if frequency is not None:
+            params["frequency"] = frequency
+        return update_voice_broadcast_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+# ── P1: Media Upload ──────────────────────────────────────────────────────────
+
+@server.tool(name="uploadMediaFile", description="Upload a media file to CallHub from a local file path. Supported formats: .mp3, .wav, .ogg, .mp4, .mov, .3gp, .3gpp, .jpg, .jpeg, .png, .gif. Returns media_file_id (sync) or job_id (async for video/GIF).")
+def upload_media_file_tool(
+    account: Optional[str] = None,
+    file_path: str = None,
+    name: Optional[str] = None,
+    generate_gif: Optional[bool] = None,
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if file_path:
+            params["file_path"] = file_path
+        if name is not None:
+            params["name"] = name
+        if generate_gif is not None:
+            params["generate_gif"] = generate_gif
+        return upload_media_file(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+# ── P2: Export Job Result ─────────────────────────────────────────────────────
+
+@server.tool(name="getExportJobResult", description="Get the result of an export job by job ID. Use this after initiating an export to retrieve the exported data.")
+def get_export_job_result_tool(
+    account: Optional[str] = None,
+    job_id: str = None,
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if job_id:
+            params["job_id"] = job_id
+        return get_export_job_result(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+# ── P2: Enterprise Credits ────────────────────────────────────────────────────
+
+@server.tool(name="shareCredits", description="Share credits from an enterprise account to a subaccount.")
+def share_credits_tool(
+    account: Optional[str] = None,
+    subaccount: str = None,
+    transfer_amount: int = None,
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if subaccount:
+            params["subaccount"] = subaccount
+        if transfer_amount is not None:
+            params["transfer_amount"] = transfer_amount
+        return share_credits(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+# ── P2: Agent/User Endpoints ──────────────────────────────────────────────────
+
+@server.tool(name="getAgentKey", description="Get an auth token (agent key) for an agent by username and password.")
+def get_agent_key_tool(
+    account: Optional[str] = None,
+    username: str = None,
+    password: str = None,
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if username:
+            params["username"] = username
+        if password:
+            params["password"] = password
+        return get_agent_key(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getAgentStatus", description="Get the current status of agents in the CallHub account.")
+def get_agent_status_tool(
+    account: Optional[str] = None,
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        return get_agent_status(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getUserDetails", description="Get details of the currently authenticated user.")
+def get_user_details_tool(
+    account: Optional[str] = None,
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        return get_user_details(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+# ── P2: Suppression Lists ─────────────────────────────────────────────────────
+
+@server.tool(name="addContactsToSuppressionList", description="Add contacts to a suppression list. Each contact should have 'phone_number' and 'mobile_number' keys. Returns 207 Multi-Status.")
+def add_contacts_to_suppression_list_tool(
+    account: Optional[str] = None,
+    list_id: str = None,
+    contacts: List[Dict[str, Any]] = None,
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["account"] = account
+        if list_id:
+            params["list_id"] = list_id
+        if contacts is not None:
+            params["contacts"] = contacts
+        return add_contacts_to_suppression_list(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+# ── P2: Collective Texting ────────────────────────────────────────────────────
+
+@server.tool(name="getCollectiveTextingQuestions", description="Get questions for a Collective Texting (P2P) campaign.")
+def get_collective_texting_questions_tool(
+    account: Optional[str] = None,
+    campaign_id: str = None,
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["account"] = account
+        if campaign_id:
+            params["campaign_id"] = campaign_id
+        return get_collective_texting_questions(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getCollectiveTextingSavedReplies", description="Get saved replies for a Collective Texting (P2P) campaign.")
+def get_collective_texting_saved_replies_tool(
+    account: Optional[str] = None,
+    campaign_id: str = None,
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["account"] = account
+        if campaign_id:
+            params["campaign_id"] = campaign_id
+        return get_collective_texting_saved_replies(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
 if __name__ == "__main__":
