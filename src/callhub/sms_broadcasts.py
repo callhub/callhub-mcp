@@ -184,7 +184,7 @@ def duplicate_sms_broadcast(params: Dict[str, Any]) -> Dict[str, Any]:
             return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
 
         client = McpApiClient(params.get("account"))
-        return client.call(f"{ENDPOINTS.SMS_BROADCAST}{campaign_id}/duplicate/", "POST")
+        return client.call(f"{ENDPOINTS.SMS_BROADCAST}duplicate/", "POST", body={"campaign_id": campaign_id})
     except Exception as e:
         sys.stderr.write(f"[callhub] Error duplicating SMS broadcast campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

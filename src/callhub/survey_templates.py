@@ -97,16 +97,29 @@ def update_survey_template(params: Dict[str, Any]) -> Dict[str, Any]:
 def delete_survey_template(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Delete a survey template by ID.
-    
+
     Args:
         params: Dictionary with 'templateId' and optional 'accountName' keys
-        
+
     Returns:
         Dictionary with deletion result or error information
     """
     template_id = params.get("templateId")
     if not template_id:
         return {"isError": True, "content": [{"type": "text", "text": "templateId is required"}]}
-    
+
     client = McpApiClient(params.get("accountName"))
     return client.call(f"{ENDPOINTS.TEMPLATES}{template_id}/", "DELETE")
+
+def get_template_schema(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Get the JSON schema for template API resources.
+
+    Args:
+        params: Dictionary with optional 'accountName' key
+
+    Returns:
+        Dictionary with template schema or error information
+    """
+    client = McpApiClient(params.get("accountName"))
+    return client.call(ENDPOINTS.TEMPLATES_SCHEMA, "GET")

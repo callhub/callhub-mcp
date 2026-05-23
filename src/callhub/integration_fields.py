@@ -46,3 +46,16 @@ def get_integration_field(params: Dict[str, Any]) -> Dict[str, Any]:
     
     client = McpApiClient(params.get("accountName"))
     return client.call(f"{ENDPOINTS.INTEGRATION_FIELDS}{field_id}/", "GET")
+
+def get_integration_field_schema(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Get the JSON schema for integration field API resources.
+
+    Args:
+        params: Dictionary with optional 'accountName' key
+
+    Returns:
+        Dictionary with integration field schema or error information
+    """
+    client = McpApiClient(params.get("accountName"))
+    return client.call(ENDPOINTS.INTEGRATION_FIELDS_SCHEMA, "GET")

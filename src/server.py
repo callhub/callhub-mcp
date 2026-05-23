@@ -197,7 +197,8 @@ from callhub.sms_campaigns import (
 from callhub.p2p_campaigns import (list_p2p_campaigns , update_p2p_campaign ,
                                    get_p2p_campaign_agents , add_agents_to_p2p_campaign , reassign_p2p_agents ,
                                    get_p2p_surveys , create_p2p_campaign ,
-                                   get_collective_texting_questions , get_collective_texting_saved_replies )
+                                   get_collective_texting_questions , get_collective_texting_saved_replies ,
+                                   get_p2p_campaign_schema )
 
 
 from callhub.sms_broadcasts import (
@@ -273,6 +274,7 @@ from callhub.survey_templates import (
     create_survey_template,
     update_survey_template,
     delete_survey_template,
+    get_template_schema,
 )
 
 from callhub.questions import (
@@ -282,7 +284,8 @@ from callhub.questions import (
 
 from callhub.integration_fields import (
     list_integration_fields,
-    get_integration_field
+    get_integration_field,
+    get_integration_field_schema,
 )
 
 from callhub.urls import (
@@ -1062,7 +1065,7 @@ def get_webhook_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="createWebhook", description="Create a new webhook. Valid event types: 'vb.transfer', 'sb.reply', 'cc.notes', or 'agent.activation'.")
+@server.tool(name="createWebhook", description="Create a new webhook. Provide an event type string (e.g. 'vb.transfer', 'sb.reply', 'cc.notes', 'agent.activation') and a target URL.")
 def create_webhook_tool(
     account: Optional[str] = None,
     event_name: str = None,
@@ -1074,14 +1077,6 @@ def create_webhook_tool(
             return {"isError": True, "content": [{"type": "text", "text": "'event_name' is required."}]}
         if not target_url:
             return {"isError": True, "content": [{"type": "text", "text": "'target_url' is required."}]}
-
-        # Validate event type
-        valid_events = ['vb.transfer', 'sb.reply', 'cc.notes', 'agent.activation']
-        if event_name not in valid_events:
-            return {
-                "isError": True,
-                "content": [{"type": "text", "text": f"'event_name' must be one of: {', '.join(valid_events)}"}]
-            }
 
         params = {
             "event_name": event_name,
@@ -3254,6 +3249,45 @@ def get_collective_texting_saved_replies_tool(
         if campaign_id:
             params["campaign_id"] = campaign_id
         return get_collective_texting_saved_replies(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getP2pCampaignSchema", description="Get the JSON schema for P2P campaign API resources.")
+def get_p2p_campaign_schema_tool(
+    account: Optional[str] = None,
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["account"] = account
+        return get_p2p_campaign_schema(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getTemplateSchema", description="Get the JSON schema for template API resources.")
+def get_template_schema_tool(
+    account: Optional[str] = None,
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        return get_template_schema(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getIntegrationFieldSchema", description="Get the JSON schema for integration field API resources.")
+def get_integration_field_schema_tool(
+    account: Optional[str] = None,
+) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        return get_integration_field_schema(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 

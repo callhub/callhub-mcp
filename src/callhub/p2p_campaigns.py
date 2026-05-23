@@ -373,6 +373,25 @@ def get_collective_texting_questions(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
+def get_p2p_campaign_schema(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Get the JSON schema for P2P campaign API resources.
+
+    Args:
+        params: Dictionary containing the following keys:
+            account (str, optional): The account name to use
+
+    Returns:
+        dict: API response containing the P2P campaign schema
+    """
+    try:
+        client = McpApiClient(params.get("account"))
+        return client.call(ENDPOINTS.P2P_CAMPAIGNS_SCHEMA, "GET")
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error getting P2P campaign schema: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
 def get_collective_texting_saved_replies(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Get saved replies for a Collective Texting (P2P) campaign.

@@ -80,11 +80,11 @@ def get_webhook(params: Dict[str, Any]) -> Dict[str, Any]:
 def create_webhook(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Create a new webhook.
-    
+
     Args:
         params: Dictionary containing the following keys:
             accountName (str, optional): The account name to use
-            event (str): The event type to listen for (e.g., 'vb.transfer', 'sb.reply', 'cc.notes', 'agent.activation')
+            event (str): The event type to listen for (e.g., 'vb.transfer', 'sb.reply', 'cc.notes', 'agent.activation', etc.)
             target (str): The URL that will receive webhook events
     
     Returns:
@@ -94,15 +94,11 @@ def create_webhook(params: Dict[str, Any]) -> Dict[str, Any]:
         event = params.get("event_name") or params.get("event")
         target = params.get("target_url") or params.get("target")
         
-        if not event:
-            return {"isError": True, "content": [{"type": "text", "text": "'event' is required."}]}
-        if not target:
-            return {"isError": True, "content": [{"type": "text", "text": "'target' is required."}]}
-        
-        valid_events = ['vb.transfer', 'sb.reply', 'cc.notes', 'agent.activation']
-        if event not in valid_events:
-            return {"isError": True, "content": [{"type": "text", "text": f"'event' must be one of: {', '.join(valid_events)}"}]}
-        
+        if not event or not isinstance(event, str):
+            return {"isError": True, "content": [{"type": "text", "text": "'event' is required and must be a string."}]}
+        if not target or not isinstance(target, str):
+            return {"isError": True, "content": [{"type": "text", "text": "'target' is required and must be a string."}]}
+
         client = McpApiClient(params.get("accountName"))
         data = {"event": event, "target": target}
         return client.call(ENDPOINTS.WEBHOOKS, "POST", form_data=data)
