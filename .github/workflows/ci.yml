@@ -42,7 +42,7 @@ jobs:
       - name: Run flake8
         run: |
           pip install flake8
-          flake8 src/ --max-line-length=150 --ignore=E501,W503,E203,E302,E303,E261,E262,E265,E266,W291,W293,W292,E231,E251,E221,E241,E271,E272,W391 --count --statistics
+          flake8 src/ --ignore=E501,W503,E203,E302,E303,E261,E262,E265,E266,W291,W293,W292,E231,E251,E221,E241,E271,E272,W391 --count --statistics
 
   import-check:
     name: Import Check

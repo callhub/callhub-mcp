@@ -230,7 +230,7 @@ Local tools — no API call required.
 |------|-------------|----------------|
 | `listWebhooks` | List all webhooks | `page`, `account` |
 | `getWebhook` | Get a webhook by ID | `webhook_id`, `account` |
-| `createWebhook` | Create a webhook | `url`, `event` (`vb.transfer`, `sb.reply`, `cc.notes`, `agent.activation`), `account` |
+| `createWebhook` | Create a webhook | `event_name`, `target_url` (`vb.transfer`, `sb.reply`, `cc.notes`, `agent.activation`), `account` |
 | `deleteWebhook` | Delete a webhook | `webhook_id`, `account` |
 
 ---
@@ -423,6 +423,9 @@ Local tools — no API call required.
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
 | `getApiSchema` † | Retrieve the full API schema documentation | `account` |
+| `getP2pCampaignSchema` | Get the JSON schema for P2P campaign creation | `account` |
+| `getTemplateSchema` | Get the JSON schema for template creation | `account` |
+| `getIntegrationFieldSchema` | Get the JSON schema for integration fields | `account` |
 
 ---
 
