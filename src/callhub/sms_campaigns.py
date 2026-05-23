@@ -61,10 +61,10 @@ def update_sms_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
         if status is None:
             return {"isError": True, "content": [{"type": "text", "text": "'status' is required."}]}
 
-            # Map string status to numeric status if needed
-            status_mapping = {
-                "start" : 1 , "pause" : 2 , "abort" : 3 , "end" : 4
-            }
+        # Map string status to numeric status if needed
+        status_mapping = {
+            "start" : 1 , "pause" : 2 , "abort" : 3 , "end" : 4
+        }
 
         # If a string status was provided, convert it to numeric
         if isinstance(status, str) and status.lower() in status_mapping:

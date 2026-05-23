@@ -1737,7 +1737,7 @@ def update_sms_broadcast_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 @server.tool(name="createP2PCampaign", description="Create a new P2P campaign with a complex script structure.")
-def dsafdsf(
+def create_p2p_campaign_tool(
     account: Optional[str] = None,
     campaign_data: dict = None
 ) -> dict:
@@ -1816,8 +1816,12 @@ def create_dnc_contact_tool(
         category: 1 for call opt-out only, 2 for text opt-out only, 3 for both call and text opt-out. Defaults to 3.
     """
     try:
-        # Parameters are passed directly to the imported function
-        return create_dnc_contact(account=account, dnc=dnc, phone_number=phone_number, category=category)
+        params = {}
+        if account: params["account"] = account
+        if dnc: params["dnc"] = dnc
+        if phone_number: params["phone_number"] = phone_number
+        if category is not None: params["category"] = category
+        return create_dnc_contact(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -1830,8 +1834,12 @@ def list_dnc_contacts_tool(
     allPages: bool = False
 ) -> dict:
     try:
-        # Parameters are passed directly to the imported function
-        return list_dnc_contacts(account=account, page=page, pageSize=pageSize, allPages=allPages)
+        params = {}
+        if account: params["account"] = account
+        if page is not None: params["page"] = page
+        if pageSize is not None: params["pageSize"] = pageSize
+        params["allPages"] = allPages
+        return list_dnc_contacts(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -1844,8 +1852,12 @@ def update_dnc_contact_tool(
     phone_number: Optional[str] = None # Phone number
 ) -> dict:
     try:
-        # Parameters are passed directly to the imported function
-        return update_dnc_contact(account=account, contactId=contactId, dnc=dnc, phone_number=phone_number)
+        params = {}
+        if account: params["account"] = account
+        if contactId: params["contactId"] = contactId
+        if dnc: params["dnc"] = dnc
+        if phone_number: params["phone_number"] = phone_number
+        return update_dnc_contact(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -1856,8 +1868,10 @@ def delete_dnc_contact_tool(
     contactId: str = None # DNC Contact ID
 ) -> dict:
     try:
-        # Parameters are passed directly to the imported function
-        return delete_dnc_contact(account=account, contactId=contactId)
+        params = {}
+        if account: params["account"] = account
+        if contactId: params["contactId"] = contactId
+        return delete_dnc_contact(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -2266,7 +2280,10 @@ def export_power_campaign_tool(
     except Exception as e:
 
 
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}@server.tool(name="updateDncList", description="Update an existing DNC list by ID.")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="updateDncList", description="Update an existing DNC list by ID.")
 def update_dnc_list_tool(
     account: Optional[str] = None,
     listId: str = None, # DNC List ID
