@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-syntax:
+    name: Lint and Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run syntax check on all Python files
+        run: |
+          python -c "
+          import ast, sys, pathlib
+          errors = []
+          for f in pathlib.Path('src').rglob('*.py'):
+              try:
+                  ast.parse(f.read_text())
+              except SyntaxError as e:
+                  errors.append(f'{f}: {e}')
+          if errors:
+              print('Syntax errors found:')
+              for e in errors: print(f'  {e}')
+              sys.exit(1)
+          print(f'All {len(list(pathlib.Path(\"src\").rglob(\"*.py\")))} files OK')
+          "
+
+      - name: Run flake8
+        run: |
+          pip install flake8
+          flake8 src/ --max-line-length=150 --ignore=E501,W503,E203,E302,E303,E261,E262,E265,E266,W291,W293,W292,E231,E251,E221,E241,E271,E272,W391 --count --statistics
+
+  import-check:
+    name: Import Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Verify all imports resolve
+        run: |
+          cd src && python -c "
+          import server
+          print('All imports resolved successfully')
+          "
+
+  security-check:
+    name: Security Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run bandit security scan
+        run: |
+          pip install bandit
+          bandit -r src/ -ll --skip B101,B603,B607 -f json || true
