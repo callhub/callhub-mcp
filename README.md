@@ -1,6 +1,6 @@
 # CallHub MCP Server
 
-A Model Context Protocol (MCP) server that exposes the CallHub API as Claude tools. Manage contacts, phonebooks, agents, teams, campaigns, and more through natural language.
+A Model Context Protocol (MCP) server that exposes the CallHub API as tools for AI assistants. Manage contacts, phonebooks, agents, teams, campaigns, and more through natural language with any MCP-compatible client.
 
 ## Table of Contents
 
@@ -28,19 +28,9 @@ A Model Context Protocol (MCP) server that exposes the CallHub API as Claude too
    pip install -r requirements.txt
    ```
 
-2. Add to your Claude Desktop `claude_desktop_config.json`:
-   ```json
-   {
-     "mcpServers": {
-       "callhub-mcp": {
-         "command": "/path/to/callhub-mcp/.venv/bin/python",
-         "args": ["/path/to/callhub-mcp/src/server.py"]
-       }
-     }
-   }
-   ```
+2. Add the server to your MCP client config (see [Installation](#installation) for client-specific instructions).
 
-3. Restart Claude Desktop. Ask Claude to configure your account:
+3. Ask your AI assistant to configure your account:
    ```
    Set up my CallHub account: username user@example.com, API key abc123, base URL https://api-na1.callhub.io
    ```
@@ -53,7 +43,7 @@ A Model Context Protocol (MCP) server that exposes the CallHub API as Claude too
 
 - Python 3.10+
 - An active CallHub account with API access
-- Claude Desktop (or any MCP-compatible client)
+- Any MCP-compatible client (Claude Desktop, Cursor, Windsurf, Cline, Continue, etc.)
 
 ### Clone and Install
 
@@ -65,24 +55,83 @@ source .venv/bin/activate        # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### Claude Desktop Configuration
+---
+
+### Client Setup
+
+This server uses the standard MCP **stdio transport** and works with any MCP-compatible client. Choose your client below.
+
+---
+
+#### Claude Desktop
 
 Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 
 ```json
 {
   "mcpServers": {
-    "callhub-mcp": {
+    "callhub": {
       "command": "/absolute/path/to/callhub-mcp/.venv/bin/python",
       "args": [
         "/absolute/path/to/callhub-mcp/src/server.py"
-      ]
+      ],
+      "env": {
+        "CALLHUB_DEFAULT_API_KEY": "your-api-key",
+        "CALLHUB_DEFAULT_USERNAME": "your-email",
+        "CALLHUB_DEFAULT_BASE_URL": "https://api-na1.callhub.io"
+      }
     }
   }
 }
 ```
 
-Replace `/absolute/path/to/callhub-mcp` with the actual directory where you cloned the repository. Claude manages the server process automatically.
+Replace `/absolute/path/to/callhub-mcp` with the actual directory where you cloned the repository. Claude Desktop manages the server process automatically.
+
+---
+
+#### ChatGPT (via MCP Bridge)
+
+ChatGPT does not natively support MCP yet. You can bridge the gap using tools like [`mcp-proxy`](https://github.com/sparfenyuk/mcp-proxy) or similar utilities that expose an MCP stdio server over SSE transport, which can then be connected to OpenAI-compatible tooling.
+
+Steps (general approach):
+1. Run `mcp-proxy` (or equivalent) to wrap this server and expose it over SSE.
+2. Connect the SSE endpoint to your OpenAI/ChatGPT tool integration.
+
+Direct ChatGPT MCP integration is evolving rapidly — check the [MCP documentation](https://modelcontextprotocol.io/clients) for the current status and recommended bridge options.
+
+---
+
+#### Google Gemini
+
+Gemini CLI and Gemini Code support MCP servers. The configuration format follows the standard MCP server config:
+
+```json
+{
+  "mcpServers": {
+    "callhub": {
+      "command": "/absolute/path/to/callhub-mcp/.venv/bin/python",
+      "args": [
+        "/absolute/path/to/callhub-mcp/src/server.py"
+      ],
+      "env": {
+        "CALLHUB_DEFAULT_API_KEY": "your-api-key",
+        "CALLHUB_DEFAULT_USERNAME": "your-email",
+        "CALLHUB_DEFAULT_BASE_URL": "https://api-na1.callhub.io"
+      }
+    }
+  }
+}
+```
+
+Refer to [Google's Gemini MCP documentation](https://ai.google.dev/gemini-api/docs/model-context-protocol) for the exact config file location and any Gemini-specific options.
+
+---
+
+#### Other MCP Clients
+
+This server works with **any MCP-compatible client** — including Cursor, Windsurf, Cline, Continue, and others — using the standard stdio transport. Consult your client's documentation for where to place the server config. The JSON structure above (command + args + env) is the standard MCP server entry format.
+
+For a full list of compatible clients, see the [MCP client directory](https://modelcontextprotocol.io/clients).
 
 ---
 
@@ -115,7 +164,7 @@ List the teams in my personal account.
 
 If no account is specified, the `default` account is used.
 
-You can also manage accounts through Claude at runtime using `configureAccount`, `listAccounts`, and `deleteAccount`.
+You can also manage accounts through your AI assistant at runtime using `configureAccount`, `listAccounts`, and `deleteAccount`.
 
 ---
 

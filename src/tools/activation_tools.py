@@ -130,14 +130,14 @@ def register(server):
         except Exception as e:
             return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-    @server.tool(name="processLocalActivationCsv", description="Process a local CSV file containing agent activation URLs. IMPORTANT: When a user uploads a CSV, Claude can only see the filename but cannot read its contents. This tool searches for the file by name in the user's local system (Downloads, Desktop, etc.) and processes the actual local file.")
+    @server.tool(name="processLocalActivationCsv", description="Process a local CSV file containing agent activation URLs. IMPORTANT: When a user uploads a CSV, the MCP client can only see the filename but cannot read its contents. This tool searches for the file by name in the user's local system (Downloads, Desktop, etc.) and processes the actual local file.")
     def process_local_activation_csv_tool(file_path: str) -> dict:
         """
         Process a local CSV file containing agent activation URLs.
 
         IMPORTANT WORKFLOW:
-        1. When a user uploads a CSV file to the conversation, Claude can only see the filename
-           but CANNOT access the content of the uploaded file
+        1. When a user uploads a CSV file to the conversation, the MCP client can only see the
+           filename but CANNOT access the content of the uploaded file
         2. This tool uses the filename to search for the actual file on the user's local system
            (Downloads folder, Desktop, Documents, etc.)
         3. The actual CSV content is read and processed from the local file system, not from
@@ -154,13 +154,13 @@ def register(server):
         except Exception as e:
             return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-    @server.tool(name="processUploadedActivationCsv", description="IMPORTANT: When a user uploads a CSV file, Claude CANNOT read its contents directly. This tool takes the filename from the upload and searches for the actual file in the user's local system (Downloads, Desktop, etc.)")
+    @server.tool(name="processUploadedActivationCsv", description="IMPORTANT: When a user uploads a CSV file, the MCP client CANNOT read its contents directly. This tool takes the filename from the upload and searches for the actual file in the user's local system (Downloads, Desktop, etc.)")
     def process_uploaded_activation_csv_tool(file_path: str) -> dict:
         """
-        IMPORTANT: Claude CANNOT read the content of uploaded files.
+        IMPORTANT: MCP clients CANNOT read the content of uploaded files directly.
 
         When a user uploads a CSV file to the conversation:
-        1. Claude can only see the filename but NOT the content
+        1. The MCP client can only see the filename but NOT the content
         2. This tool uses that filename to search for the actual file in standard locations
            (Downloads folder, Desktop, Documents, etc.)
         3. The CSV is processed from the local file system, NOT from the upload
@@ -176,13 +176,13 @@ def register(server):
         except Exception as e:
             return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-    @server.tool(name="processUploadedCsv", description="IMPORTANT: When a user uploads a CSV file, Claude CANNOT read its contents directly. This tool takes the filename from the upload and searches for the actual file in the user's local system (Downloads, Desktop, etc.)")
+    @server.tool(name="processUploadedCsv", description="IMPORTANT: When a user uploads a CSV file, the MCP client CANNOT read its contents directly. This tool takes the filename from the upload and searches for the actual file in the user's local system (Downloads, Desktop, etc.)")
     def process_uploaded_csv_tool(file_path: str) -> dict:
         """
-        IMPORTANT: Claude CANNOT read the content of uploaded files.
+        IMPORTANT: MCP clients CANNOT read the content of uploaded files directly.
 
         When a user uploads a CSV file to the conversation:
-        1. Claude can only see the filename but NOT the content
+        1. The MCP client can only see the filename but NOT the content
         2. This tool uses that filename to search for the actual file in standard locations
            (Downloads folder, Desktop, Documents, etc.)
         3. The CSV is processed from the local file system, NOT from the upload

@@ -936,7 +936,7 @@ def process_local_activation_csv(file_path: str) -> Dict:
     Process a local CSV file containing agent activation URLs.
     
     IMPORTANT: This is used when a user uploads a CSV to the conversation.
-    Claude cannot read the uploaded file's contents directly - it only gets the filename.
+    MCP clients cannot read the uploaded file's contents directly - they only get the filename.
     This function searches for that file in the user's local system and processes it.
     
     Args:

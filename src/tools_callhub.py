@@ -1,14 +1,14 @@
 # File: src/tools_callhub.py
 
 """
-CallHub API Tools for Claude
+CallHub API Tools for MCP
 
-This module contains tools for interacting with the CallHub API through Claude.
+This module contains tools for interacting with the CallHub API through any MCP-compatible client.
 
 ## Server Restart Guidelines
 
 The CallHub MCP server must be restarted manually by the user after any code changes.
-If you're using Claude or another AI assistant to modify this code:
+If you're using an AI assistant to modify this code:
 
 1. The AI should NEVER assume a restart has occurred
 2. The AI should ALWAYS pause after suggesting code changes

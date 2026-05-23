@@ -1,7 +1,7 @@
 """
 MCP tools package for CallHub API integration.
 
-This package contains tools for use with the Claude MCP adapter.
+This package contains tools for use with any MCP-compatible client.
 """
 
 from .batch_activation_tools import (

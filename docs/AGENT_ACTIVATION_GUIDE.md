@@ -288,7 +288,7 @@ reset_result = resetActivationState(account="default")
 
 ## File-Based Activation Logging
 
-When activating large numbers of agents, the system automatically logs all progress to a file. This is a better approach than trying to stream updates through the conversation with Claude, as it:
+When activating large numbers of agents, the system automatically logs all progress to a file. This is a better approach than trying to stream updates through the conversation with your AI assistant, as it:
 
 1. **Avoids context window limitations** - The log file can be as large as needed
 2. **Provides more detailed logs** - Every step of the process is recorded
