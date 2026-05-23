@@ -16,7 +16,7 @@ def create_sms_broadcast(params: Dict[str, Any]) -> Dict[str, Any]:
 
     Args:
         params: Dictionary containing the following keys:
-            account (str, optional): The account name to use
+            accountName (str, optional): The account name to use
             name (str): Campaign name
             text_message (str): SMS message content
             phonebook (list): List of phonebook IDs
@@ -54,7 +54,7 @@ def create_sms_broadcast(params: Dict[str, Any]) -> Dict[str, Any]:
             if not params.get(key):
                 return {"isError": True, "content": [{"type": "text", "text": f"'{key}' is required."}]}
 
-        client = McpApiClient(params.get("account"))
+        client = McpApiClient(params.get("accountName"))
 
         data = {
             "name": params.get("name"),
@@ -105,7 +105,7 @@ def get_sms_broadcast(params: Dict[str, Any]) -> Dict[str, Any]:
 
     Args:
         params: Dictionary containing the following keys:
-            account (str, optional): The account name to use
+            accountName (str, optional): The account name to use
             campaignId (str): The ID of the campaign to retrieve
 
     Returns:
@@ -116,7 +116,7 @@ def get_sms_broadcast(params: Dict[str, Any]) -> Dict[str, Any]:
         if not campaign_id:
             return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
 
-        client = McpApiClient(params.get("account"))
+        client = McpApiClient(params.get("accountName"))
         return client.call(f"{ENDPOINTS.SMS_BROADCAST}{campaign_id}/", "GET")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error getting SMS broadcast campaign: {str(e)}\n")
@@ -128,7 +128,7 @@ def update_sms_broadcast(params: Dict[str, Any]) -> Dict[str, Any]:
     
     Args:
         params: Dictionary containing the following keys:
-            account (str, optional): The account name to use
+            accountName (str, optional): The account name to use
             campaignId (str): The ID of the campaign to update
             status (str or int): The new status of the campaign. 
                 String values: "start", "pause", "abort", "end"
@@ -159,7 +159,7 @@ def update_sms_broadcast(params: Dict[str, Any]) -> Dict[str, Any]:
                 "content": [{"type": "text", "text": "Valid 'status' is required: start, pause, abort, end, or a valid numeric status (1-4)"}]
             }
         
-        client = McpApiClient(params.get("account"))
+        client = McpApiClient(params.get("accountName"))
         data = {"status": status}
         return client.call(f"{ENDPOINTS.SMS_BROADCAST}{campaign_id}/", "PATCH", body=data)
     except Exception as e:
@@ -172,7 +172,7 @@ def duplicate_sms_broadcast(params: Dict[str, Any]) -> Dict[str, Any]:
 
     Args:
         params: Dictionary containing the following keys:
-            account (str, optional): The account name to use
+            accountName (str, optional): The account name to use
             campaignId (str): The ID of the campaign to duplicate
 
     Returns:
@@ -183,7 +183,7 @@ def duplicate_sms_broadcast(params: Dict[str, Any]) -> Dict[str, Any]:
         if not campaign_id:
             return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
 
-        client = McpApiClient(params.get("account"))
+        client = McpApiClient(params.get("accountName"))
         return client.call(f"{ENDPOINTS.SMS_BROADCAST}duplicate/", "POST", body={"campaign_id": campaign_id})
     except Exception as e:
         sys.stderr.write(f"[callhub] Error duplicating SMS broadcast campaign: {str(e)}\n")

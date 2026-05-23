@@ -17,7 +17,7 @@ def list_p2p_campaigns(params: Dict[str, Any]) -> Dict[str, Any]:
     
     Args:
         params: Dictionary containing the following keys:
-            account (str, optional): The account name to use
+            accountName (str, optional): The account name to use
             page (int, optional): Page number for pagination
             pageSize (int, optional): Number of items per page
     
@@ -25,7 +25,7 @@ def list_p2p_campaigns(params: Dict[str, Any]) -> Dict[str, Any]:
         dict: API response containing campaign data or error information
     """
     try:
-        client = McpApiClient(params.get("account"))
+        client = McpApiClient(params.get("accountName"))
         query_params = {}
         if params.get("page") is not None:
             query_params["page"] = params["page"]
@@ -42,7 +42,7 @@ def update_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     
     Args:
         params: Dictionary containing the following keys:
-            account (str, optional): The account name to use
+            accountName (str, optional): The account name to use
             campaignId (str): The ID of the campaign to update
             status (str or int): The new status of the campaign. 
                 String values: "start", "pause", "abort", "end"
@@ -61,7 +61,7 @@ def update_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'status' is required."}]}
 
     try:
-        client = McpApiClient(params.get("account"))
+        client = McpApiClient(params.get("accountName"))
         return client.call(f"{ENDPOINTS.P2P_CAMPAIGN}{campaign_id}/", "PUT", body={"status": status})
     except Exception as e:
         sys.stderr.write(f"[callhub] Error updating P2P campaign: {str(e)}\n")
@@ -73,7 +73,7 @@ def delete_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     
     Args:
         params: Dictionary containing the following keys:
-            account (str, optional): The account name to use
+            accountName (str, optional): The account name to use
             campaignId (str): The ID of the campaign to delete
     
     Returns:
@@ -85,7 +85,7 @@ def delete_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
     
     try:
-        client = McpApiClient(params.get("account"))
+        client = McpApiClient(params.get("accountName"))
         return client.call(f"{ENDPOINTS.P2P_CAMPAIGN}{campaign_id}/", "DELETE")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error deleting P2P campaign: {str(e)}\n")
@@ -97,7 +97,7 @@ def get_p2p_campaign_agents(params: Dict[str, Any]) -> Dict[str, Any]:
     
     Args:
         params: Dictionary containing the following keys:
-            account (str, optional): The account name to use
+            accountName (str, optional): The account name to use
             campaignId (str): The ID of the campaign
     
     Returns:
@@ -108,7 +108,7 @@ def get_p2p_campaign_agents(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
     
     try:
-        client = McpApiClient(params.get("account"))
+        client = McpApiClient(params.get("accountName"))
         return client.call(ENDPOINTS.COLLECTIVE_TEXTING_AGENTS.format(campaign_id=campaign_id), "GET")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error getting P2P campaign agents: {str(e)}\n")
@@ -120,7 +120,7 @@ def add_agents_to_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     
     Args:
         params: Dictionary containing the following keys:
-            account (str, optional): The account name to use
+            accountName (str, optional): The account name to use
             campaignId (str): The ID of the campaign
             agentIds (List[str]): List of agent IDs to add
     
@@ -136,7 +136,7 @@ def add_agents_to_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'agentIds' is required."}]}
     
     try:
-        client = McpApiClient(params.get("account"))
+        client = McpApiClient(params.get("accountName"))
         data = {"agents": agent_ids}
         return client.call(ENDPOINTS.COLLECTIVE_TEXTING_AGENTS_ADD.format(campaign_id=campaign_id), "POST", body=data)
     except Exception as e:
@@ -149,7 +149,7 @@ def reassign_p2p_agents(params: Dict[str, Any]) -> Dict[str, Any]:
     
     Args:
         params: Dictionary containing the following keys:
-            account (str, optional): The account name to use
+            accountName (str, optional): The account name to use
             campaignId (str): The ID of the campaign
             reassignData (Dict): Reassignment configuration
     
@@ -163,7 +163,7 @@ def reassign_p2p_agents(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
     
     try:
-        client = McpApiClient(params.get("account"))
+        client = McpApiClient(params.get("accountName"))
         return client.call(ENDPOINTS.COLLECTIVE_TEXTING_AGENTS_REASSIGN.format(campaign_id=campaign_id), "POST", body=reassign_data)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error reassigning P2P agents: {str(e)}\n")
@@ -174,7 +174,7 @@ def create_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     Create a new P2P (Snowflake) campaign.
     Args:
         params: Dictionary containing campaign configuration data including:
-            account (str, optional): The account name to use
+            accountName (str, optional): The account name to use
             campaign_data (Dict): Campaign configuration containing:
                 name (str): Campaign name (required)
                 template_id (int): Survey template ID - USE THIS instead of script object
@@ -257,7 +257,7 @@ def create_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
             payload[field] = campaign_data[field]
     
     try:
-        client = McpApiClient(params.get("account"))
+        client = McpApiClient(params.get("accountName"))
         # Log the payload being sent for debugging
         sys.stderr.write(f"[callhub] Template ID: {template_id}\n")
         sys.stderr.write(f"[callhub] Payload: {json.dumps(payload, indent=2)}\n")
@@ -305,14 +305,14 @@ def get_p2p_surveys(params: Dict[str, Any]) -> Dict[str, Any]:
     
     Args:
         params: Dictionary containing the following keys:
-            account (str, optional): The account name to use
+            accountName (str, optional): The account name to use
             campaignId (str, optional): The ID of the campaign
     
     Returns:
         dict: API response containing survey data
     """
     try:
-        client = McpApiClient(params.get("account"))
+        client = McpApiClient(params.get("accountName"))
         campaign_id = params.get("campaignId")
         
         if campaign_id:
@@ -331,7 +331,7 @@ def duplicate_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
 
     Args:
         params: Dictionary containing the following keys:
-            account (str, optional): The account name to use
+            accountName (str, optional): The account name to use
             campaignId (str): The ID of the campaign to duplicate
 
     Returns:
@@ -342,7 +342,7 @@ def duplicate_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
 
     try:
-        client = McpApiClient(params.get("account"))
+        client = McpApiClient(params.get("accountName"))
         return client.call(f"{ENDPOINTS.P2P_CAMPAIGNS}{campaign_id}/duplicate/", "POST")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error duplicating P2P campaign: {str(e)}\n")
@@ -355,7 +355,7 @@ def get_collective_texting_questions(params: Dict[str, Any]) -> Dict[str, Any]:
 
     Args:
         params: Dictionary containing the following keys:
-            account (str, optional): The account name to use
+            accountName (str, optional): The account name to use
             campaign_id (str): The ID of the campaign
 
     Returns:
@@ -366,7 +366,7 @@ def get_collective_texting_questions(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'campaign_id' is required."}]}
 
     try:
-        client = McpApiClient(params.get("account"))
+        client = McpApiClient(params.get("accountName"))
         return client.call(f"{ENDPOINTS.COLLECTIVE_TEXTING}campaigns/{campaign_id}/questions/", "GET")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error getting collective texting questions: {str(e)}\n")
@@ -379,13 +379,13 @@ def get_p2p_campaign_schema(params: Dict[str, Any]) -> Dict[str, Any]:
 
     Args:
         params: Dictionary containing the following keys:
-            account (str, optional): The account name to use
+            accountName (str, optional): The account name to use
 
     Returns:
         dict: API response containing the P2P campaign schema
     """
     try:
-        client = McpApiClient(params.get("account"))
+        client = McpApiClient(params.get("accountName"))
         return client.call(ENDPOINTS.P2P_CAMPAIGNS_SCHEMA, "GET")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error getting P2P campaign schema: {str(e)}\n")
@@ -398,7 +398,7 @@ def get_collective_texting_saved_replies(params: Dict[str, Any]) -> Dict[str, An
 
     Args:
         params: Dictionary containing the following keys:
-            account (str, optional): The account name to use
+            accountName (str, optional): The account name to use
             campaign_id (str): The ID of the campaign
 
     Returns:
@@ -409,7 +409,7 @@ def get_collective_texting_saved_replies(params: Dict[str, Any]) -> Dict[str, An
         return {"isError": True, "content": [{"type": "text", "text": "'campaign_id' is required."}]}
 
     try:
-        client = McpApiClient(params.get("account"))
+        client = McpApiClient(params.get("accountName"))
         return client.call(f"{ENDPOINTS.COLLECTIVE_TEXTING}campaigns/{campaign_id}/saved_replies/", "GET")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error getting collective texting saved replies: {str(e)}\n")

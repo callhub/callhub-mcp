@@ -9,7 +9,7 @@ def create_dnc_contact(params: Dict[str, Any]) -> Dict[str, Any]:
     Create a new DNC contact.
     
     Args:
-        account (str, optional): The CallHub account name to use. Defaults to 'default'.
+        accountName (str, optional): The CallHub account name to use. Defaults to 'default'.
         dnc (str, required): URL of the DNC list that the phone number belongs to.
                              Format: 'https://api.callhub.io/v1/dnc_lists/{id}/'
         phone_number (str, required): Phone number of the contact in E.164 format.
@@ -28,7 +28,7 @@ def create_dnc_contact(params: Dict[str, Any]) -> Dict[str, Any]:
     if not phone_number:
         return {"isError": True, "content": [{"text": "'phone_number' is required."}]}
 
-    client = McpApiClient(params.get("account"))
+    client = McpApiClient(params.get("accountName"))
     data = {"dnc": dnc, "phone_number": phone_number, "category": category}
     return client.call(ENDPOINTS.DNC_CONTACTS, "POST", form_data=data)
 
@@ -37,7 +37,7 @@ def list_dnc_contacts(params: Dict[str, Any]) -> Dict[str, Any]:
     Retrieve a list of DNC contacts with optional pagination.
     
     Args:
-        account (str, optional): The CallHub account name to use. Defaults to 'default'.
+        accountName (str, optional): The CallHub account name to use. Defaults to 'default'.
         page (int, optional): Page number for pagination. Defaults to 1.
         pageSize (int, optional): Number of items per page. Defaults to 10.
         allPages (bool, optional): If True, fetch all pages. Defaults to False.
@@ -45,7 +45,7 @@ def list_dnc_contacts(params: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         dict: API response containing DNC contacts with url, dnc, and phone_number fields.
     """
-    client = McpApiClient(params.get("account"))
+    client = McpApiClient(params.get("accountName"))
     all_pages = params.get("allPages", False)
 
     if not all_pages:
@@ -79,7 +79,7 @@ def update_dnc_contact(params: Dict[str, Any]) -> Dict[str, Any]:
     Update an existing DNC contact by ID.
     
     Args:
-        account (str, optional): The CallHub account name to use. Defaults to 'default'.
+        accountName (str, optional): The CallHub account name to use. Defaults to 'default'.
         contactId (str, required): The ID of the DNC contact to update.
         dnc (str, required): URL of the DNC list that the contact belongs to.
                             Format: 'https://api.callhub.io/v1/dnc_lists/{id}/'
@@ -103,7 +103,7 @@ def update_dnc_contact(params: Dict[str, Any]) -> Dict[str, Any]:
     if not phone_number:
         return {"isError": True, "content": [{"text": "'phone_number' is required."}]}
 
-    client = McpApiClient(params.get("account"))
+    client = McpApiClient(params.get("accountName"))
     data = {"dnc": dnc, "phone_number": phone_number}
     return client.call(f"{ENDPOINTS.DNC_CONTACTS}{contact_id}/", "PUT", form_data=data)
 
@@ -112,7 +112,7 @@ def delete_dnc_contact(params: Dict[str, Any]) -> Dict[str, Any]:
     Delete a DNC contact by ID.
     
     Args:
-        account (str, optional): The CallHub account name to use. Defaults to 'default'.
+        accountName (str, optional): The CallHub account name to use. Defaults to 'default'.
         contactId (str, required): The ID of the DNC contact to delete.
         
     Returns:
@@ -122,7 +122,7 @@ def delete_dnc_contact(params: Dict[str, Any]) -> Dict[str, Any]:
     if not contact_id:
         return {"isError": True, "content": [{"text": "'contactId' is required."}]}
 
-    client = McpApiClient(params.get("account"))
+    client = McpApiClient(params.get("accountName"))
     return client.call(f"{ENDPOINTS.DNC_CONTACTS}{contact_id}/", "DELETE")
 
 def create_dnc_list(params: Dict[str, Any]) -> Dict[str, Any]:
@@ -130,7 +130,7 @@ def create_dnc_list(params: Dict[str, Any]) -> Dict[str, Any]:
     Create a new DNC list.
     
     Args:
-        account (str, optional): The CallHub account name to use. Defaults to 'default'.
+        accountName (str, optional): The CallHub account name to use. Defaults to 'default'.
         name (str, required): Name of the DNC list to be created.
         
     Returns:
@@ -140,7 +140,7 @@ def create_dnc_list(params: Dict[str, Any]) -> Dict[str, Any]:
     if not name:
         return {"isError": True, "content": [{"text": "'name' is required."}]}
 
-    client = McpApiClient(params.get("account"))
+    client = McpApiClient(params.get("accountName"))
     data = {"name": name}
     return client.call(ENDPOINTS.DNC_LISTS, "POST", form_data=data)
 
@@ -149,7 +149,7 @@ def list_dnc_lists(params: Dict[str, Any]) -> Dict[str, Any]:
     Retrieve a list of DNC lists with optional pagination.
     
     Args:
-        account (str, optional): The CallHub account name to use. Defaults to 'default'.
+        accountName (str, optional): The CallHub account name to use. Defaults to 'default'.
         page (int, optional): Page number for pagination. Defaults to 1.
         pageSize (int, optional): Number of items per page. Defaults to 10.
         allPages (bool, optional): If True, fetch all pages. Defaults to False.
@@ -157,7 +157,7 @@ def list_dnc_lists(params: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         dict: API response containing DNC lists with url, owner, and name fields.
     """
-    client = McpApiClient(params.get("account"))
+    client = McpApiClient(params.get("accountName"))
     all_pages = params.get("allPages", False)
 
     if not all_pages:
@@ -191,7 +191,7 @@ def update_dnc_list(params: Dict[str, Any]) -> Dict[str, Any]:
     Update an existing DNC list by ID.
     
     Args:
-        account (str, optional): The CallHub account name to use. Defaults to 'default'.
+        accountName (str, optional): The CallHub account name to use. Defaults to 'default'.
         listId (str, required): The ID of the DNC list to update.
         name (str, required): The new name for the DNC list.
         
@@ -206,7 +206,7 @@ def update_dnc_list(params: Dict[str, Any]) -> Dict[str, Any]:
     if not name:
         return {"isError": True, "content": [{"text": "'name' is required."}]}
 
-    client = McpApiClient(params.get("account"))
+    client = McpApiClient(params.get("accountName"))
     data = {"name": name}
     return client.call(f"{ENDPOINTS.DNC_LISTS}{list_id}/", "PUT", form_data=data)
 
@@ -215,7 +215,7 @@ def delete_dnc_list(params: Dict[str, Any]) -> Dict[str, Any]:
     Delete a DNC list by ID.
 
     Args:
-        account (str, optional): The CallHub account name to use. Defaults to 'default'.
+        accountName (str, optional): The CallHub account name to use. Defaults to 'default'.
         listId (str, required): The ID of the DNC list to delete.
 
     Returns:
@@ -225,7 +225,7 @@ def delete_dnc_list(params: Dict[str, Any]) -> Dict[str, Any]:
     if not list_id:
         return {"isError": True, "content": [{"text": "'listId' is required."}]}
 
-    client = McpApiClient(params.get("account"))
+    client = McpApiClient(params.get("accountName"))
     return client.call(f"{ENDPOINTS.DNC_LISTS}{list_id}/", "DELETE")
 
 
@@ -235,7 +235,7 @@ def add_contacts_to_suppression_list(params: Dict[str, Any]) -> Dict[str, Any]:
 
     Args:
         params: Dictionary containing the following keys:
-            account (str, optional): The account name to use
+            accountName (str, optional): The account name to use
             list_id (str): The ID of the suppression list
             contacts (list): List of dicts with 'phone_number' and 'mobile_number' keys
 
@@ -251,7 +251,7 @@ def add_contacts_to_suppression_list(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'contacts' must be a non-empty list."}]}
 
     try:
-        client = McpApiClient(params.get("account"))
+        client = McpApiClient(params.get("accountName"))
         data = {"contacts": contacts}
         return client.call(f"{ENDPOINTS.SUPPRESSION_LISTS}{list_id}/contacts/", "POST", body=data)
     except Exception as e:

@@ -25,7 +25,7 @@ def register(server):
         try:
             params = {}
             if account:
-                params["account"] = account
+                params["accountName"] = account
             if page is not None:
                 params["page"] = page
             if pageSize is not None:
@@ -57,7 +57,7 @@ def register(server):
                 "status": status
             }
             if account:
-                params["account"] = account
+                params["accountName"] = account
 
             return update_p2p_campaign(params)
         except Exception as e:
@@ -104,7 +104,7 @@ def register(server):
 
             params = {"campaignId": campaignId}
             if account:
-                params["account"] = account
+                params["accountName"] = account
 
             return get_p2p_campaign_agents(params)
         except Exception as e:
@@ -124,7 +124,7 @@ def register(server):
 
             params = {"campaignId": campaignId, "agentIds": agentIds}
             if account:
-                params["account"] = account
+                params["accountName"] = account
 
             return add_agents_to_p2p_campaign(params)
         except Exception as e:
@@ -142,7 +142,7 @@ def register(server):
 
             params = {"campaignId": campaignId, "reassignData": reassignData or {}}
             if account:
-                params["account"] = account
+                params["accountName"] = account
 
             return reassign_p2p_agents(params)
         except Exception as e:
@@ -158,7 +158,7 @@ def register(server):
             if campaignId:
                 params["campaignId"] = campaignId
             if account:
-                params["account"] = account
+                params["accountName"] = account
 
             return get_p2p_surveys(params)
         except Exception as e:
@@ -172,7 +172,7 @@ def register(server):
         try:
             params = {}
             if account:
-                params["account"] = account
+                params["accountName"] = account
             if campaign_id:
                 params["campaign_id"] = campaign_id
             return get_collective_texting_questions(params)
@@ -187,7 +187,7 @@ def register(server):
         try:
             params = {}
             if account:
-                params["account"] = account
+                params["accountName"] = account
             if campaign_id:
                 params["campaign_id"] = campaign_id
             return get_collective_texting_saved_replies(params)
@@ -201,7 +201,7 @@ def register(server):
         try:
             params = {}
             if account:
-                params["account"] = account
+                params["accountName"] = account
             return get_p2p_campaign_schema(params)
         except Exception as e:
             return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

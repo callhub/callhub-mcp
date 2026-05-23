@@ -118,7 +118,7 @@ def duplicate_vb_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
         if not campaign_id:
             return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
 
-        client = McpApiClient(params.get("account"))
+        client = McpApiClient(params.get("accountName"))
         return client.call(f"{ENDPOINTS.VB_CAMPAIGN}{campaign_id}/duplicate/", "POST")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error duplicating voice broadcast campaign: {str(e)}\n")

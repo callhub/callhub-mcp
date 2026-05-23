@@ -31,7 +31,7 @@ def register(server):
         """
         try:
             params = {}
-            if account: params["account"] = account
+            if account: params["accountName"] = account
             if dnc: params["dnc"] = dnc
             if phone_number: params["phone_number"] = phone_number
             if category is not None: params["category"] = category
@@ -48,7 +48,7 @@ def register(server):
     ) -> dict:
         try:
             params = {}
-            if account: params["account"] = account
+            if account: params["accountName"] = account
             if page is not None: params["page"] = page
             if pageSize is not None: params["pageSize"] = pageSize
             params["allPages"] = allPages
@@ -65,7 +65,7 @@ def register(server):
     ) -> dict:
         try:
             params = {}
-            if account: params["account"] = account
+            if account: params["accountName"] = account
             if contactId: params["contactId"] = contactId
             if dnc: params["dnc"] = dnc
             if phone_number: params["phone_number"] = phone_number
@@ -80,7 +80,7 @@ def register(server):
     ) -> dict:
         try:
             params = {}
-            if account: params["account"] = account
+            if account: params["accountName"] = account
             if contactId: params["contactId"] = contactId
             return delete_dnc_contact(params)
         except Exception as e:
@@ -93,7 +93,7 @@ def register(server):
     ) -> dict:
         try:
             params = {}
-            if account: params["account"] = account
+            if account: params["accountName"] = account
             if name: params["name"] = name
             return create_dnc_list(params)
         except Exception as e:
@@ -108,7 +108,7 @@ def register(server):
     ) -> dict:
         try:
             params = {}
-            if account: params["account"] = account
+            if account: params["accountName"] = account
             if page is not None: params["page"] = page
             if pageSize is not None: params["pageSize"] = pageSize
             if allPages: params["allPages"] = allPages
@@ -124,7 +124,7 @@ def register(server):
     ) -> dict:
         try:
             params = {}
-            if account: params["account"] = account
+            if account: params["accountName"] = account
             if listId: params["listId"] = listId
             if name: params["name"] = name
             return update_dnc_list(params)
@@ -138,7 +138,7 @@ def register(server):
     ) -> dict:
         try:
             params = {}
-            if account: params["account"] = account
+            if account: params["accountName"] = account
             if listId: params["listId"] = listId
             return delete_dnc_list(params)
         except Exception as e:
@@ -153,7 +153,7 @@ def register(server):
         try:
             params = {}
             if account:
-                params["account"] = account
+                params["accountName"] = account
             if list_id:
                 params["list_id"] = list_id
             if contacts is not None:

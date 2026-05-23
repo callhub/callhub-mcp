@@ -532,11 +532,12 @@ def upload_media_file(params: Dict[str, Any]) -> Dict[str, Any]:
         with open(file_path, "rb") as f:
             files = {"file": (os.path.basename(file_path), f)}
             verify_ssl = not any(h in url.lower() for h in ["0.0.0.0", "localhost", "127.0.0.1"])
-            resp = requests.post(url, headers=headers, files=files, data=data, verify=verify_ssl)
+            resp = requests.post(url, headers=headers, files=files, data=data, verify=verify_ssl, timeout=120)
 
         if resp.status_code >= 400:
             try:
-                return {"isError": True, "content": [{"type": "text", "text": resp.text}]}
+                error_text = resp.text[:500] if resp.text else f"HTTP {resp.status_code}"
+                return {"isError": True, "content": [{"type": "text", "text": error_text}]}
             except Exception:
                 return {"isError": True, "content": [{"type": "text", "text": f"HTTP {resp.status_code}"}]}
 

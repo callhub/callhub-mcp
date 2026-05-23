@@ -136,7 +136,7 @@ def register(server):
 
             # Add optional parameters if provided
             if account:
-                params["account"] = account
+                params["accountName"] = account
             if description:
                 params["description"] = description
             if startingdate:
@@ -179,7 +179,7 @@ def register(server):
                 "campaignId": campaignId
             }
             if account:
-                params["account"] = account
+                params["accountName"] = account
 
             return get_sms_broadcast(params)
         except Exception as e:
@@ -207,7 +207,7 @@ def register(server):
                 "status": status
             }
             if account:
-                params["account"] = account
+                params["accountName"] = account
 
             return update_sms_broadcast(params)
         except Exception as e:

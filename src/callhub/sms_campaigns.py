@@ -94,7 +94,7 @@ def delete_sms_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
 
     Args:
         params: Dictionary containing the following keys:
-            account (str, optional): The account name to use
+            accountName (str, optional): The account name to use
             campaignId (str): The ID of the campaign to delete
 
     Returns:
