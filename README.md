@@ -375,7 +375,7 @@ Local tools — no API call required.
 | `getUsers` | List all users in the account | `account` |
 | `getUserDetails` | Get details of the currently authenticated user | `account` |
 | `getCreditUsage` | Get credit usage details | `account` |
-| `shareCredits` | Share credits from an enterprise account to a subaccount | `subaccount_id`, `credits`, `account` |
+| `shareCredits` | Share credits from an enterprise account to a subaccount | `subaccount`, `transfer_amount`, `account` |
 
 ---
 
