@@ -2009,8 +2009,10 @@ def create_dnc_list_tool(
     name: str = None
 ) -> dict:
     try:
-        # Parameters are passed directly to the imported function
-        return create_dnc_list(account=account, name=name)
+        params = {}
+        if account: params["account"] = account
+        if name: params["name"] = name
+        return create_dnc_list(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -2023,8 +2025,12 @@ def list_dnc_lists_tool(
     allPages: bool = False
 ) -> dict:
     try:
-        # Parameters are passed directly to the imported function
-        return list_dnc_lists(account=account, page=page, pageSize=pageSize, allPages=allPages)
+        params = {}
+        if account: params["account"] = account
+        if page is not None: params["page"] = page
+        if pageSize is not None: params["pageSize"] = pageSize
+        if allPages: params["allPages"] = allPages
+        return list_dnc_lists(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -2290,8 +2296,11 @@ def update_dnc_list_tool(
     name: str = None
 ) -> dict:
     try:
-        # Parameters are passed directly to the imported function
-        return update_dnc_list(account=account, listId=listId, name=name)
+        params = {}
+        if account: params["account"] = account
+        if listId: params["listId"] = listId
+        if name: params["name"] = name
+        return update_dnc_list(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -2302,8 +2311,10 @@ def delete_dnc_list_tool(
     listId: str = None # DNC List ID
 ) -> dict:
     try:
-        # Parameters are passed directly to the imported function
-        return delete_dnc_list(account=account, listId=listId)
+        params = {}
+        if account: params["account"] = account
+        if listId: params["listId"] = listId
+        return delete_dnc_list(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
