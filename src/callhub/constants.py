@@ -49,5 +49,12 @@ class ENDPOINTS:
     SMS_CAMPAIGN_REPORT_EXPORT = "/v1/sms_campaign/sms_report/export/"
     CONTACTS_BULK_CREATE = "/v1/contacts/bulk_create/"
     CONTACTS_FIELDS = "/v1/contacts/fields/"
-    RELATIONAL_CAMPAIGN = "/email/v1/relational-campaign/"
+    RELATIONAL_CAMPAIGN = "/email/v_1/relational-campaign/"
+    MEDIA_UPLOAD = "/v1/media/upload/"
+    EXPORT_DATA = "/v1/export_data/"
+    SHARE_CREDITS = "/enterprise-account/share-credits/"
+    AGENT_KEY = "/v2/agent-key/"
+    AGENT_STATUS = "/v2/agent-status/"
+    USER_DETAILS = "/v2/user-details/"
+    SUPPRESSION_LISTS = "/suppression-lists/"
 

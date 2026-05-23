@@ -12,17 +12,33 @@ from .constants import ENDPOINTS
 def list_rented_numbers(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     List all rented calling numbers (caller IDs) for the account.
-    
+
     Args:
         params: Dictionary containing the following keys:
             accountName (str, optional): The account name to use
-    
+            page_size (int, optional): Number of results per page
+            page (int, optional): Page number
+            countries (str, optional): Filter by country ISO code(s)
+            order_by (str, optional): Field to order results by
+            order_direction (str, optional): Sort direction ('asc' or 'desc')
+
     Returns:
         dict: API response containing rented number data or error information
     """
     try:
         client = McpApiClient(params.get("accountName"))
-        return client.call(f"{ENDPOINTS.NUMBERS}rented_calling_numbers/", "GET")
+        query_params = {}
+        if params.get("page_size") is not None:
+            query_params["page_size"] = params["page_size"]
+        if params.get("page") is not None:
+            query_params["page"] = params["page"]
+        if params.get("countries"):
+            query_params["countries"] = params["countries"]
+        if params.get("order_by"):
+            query_params["order_by"] = params["order_by"]
+        if params.get("order_direction"):
+            query_params["order_direction"] = params["order_direction"]
+        return client.call(f"{ENDPOINTS.NUMBERS}rented_calling_numbers/", "GET", query=query_params)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error listing rented numbers: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -30,17 +46,24 @@ def list_rented_numbers(params: Dict[str, Any]) -> Dict[str, Any]:
 def list_validated_numbers(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     List all validated personal phone numbers that can be used as caller IDs.
-    
+
     Args:
         params: Dictionary containing the following keys:
             accountName (str, optional): The account name to use
-    
+            page (int, optional): Page number
+            page_size (int, optional): Number of results per page
+
     Returns:
         dict: API response containing validated number data or error information
     """
     try:
         client = McpApiClient(params.get("accountName"))
-        return client.call(f"{ENDPOINTS.NUMBERS}validated_numbers/", "GET")
+        query_params = {}
+        if params.get("page") is not None:
+            query_params["page"] = params["page"]
+        if params.get("page_size") is not None:
+            query_params["page_size"] = params["page_size"]
+        return client.call(f"{ENDPOINTS.NUMBERS}validated_numbers/", "GET", query=query_params)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error listing validated numbers: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -77,7 +100,9 @@ def rent_number(params: Dict[str, Any]) -> Dict[str, Any]:
             data["prefix"] = params["prefix"]
         if "setup_fee" in params:
             data["setup_fee"] = params["setup_fee"]
-        
+        if params.get("campaign_type"):
+            data["campaign_type"] = params["campaign_type"]
+
         return client.call(f"{ENDPOINTS.NUMBERS}rent/", "POST", body=data)
     except Exception as e:
         sys.stderr.write(f"[callhub] Error renting number: {str(e)}\n")

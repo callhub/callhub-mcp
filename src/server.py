@@ -1126,11 +1126,12 @@ def list_call_center_campaigns_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="updateCallCenterCampaign", description="Update a call center campaign's status. Valid values: 'pause', 'resume', 'stop', 'restart'.")
+@server.tool(name="updateCallCenterCampaign", description="Update a call center campaign's status and/or name. Valid status values: 'pause', 'resume', 'stop', 'restart'.")
 def update_call_center_campaign_tool(
     account: Optional[str] = None,
     campaignId: str = None,
-    status: str = None
+    status: str = None,
+    name: Optional[str] = None
 ) -> dict:
     try:
         # Validate required parameters
@@ -1149,6 +1150,8 @@ def update_call_center_campaign_tool(
         }
         if account:
             params["accountName"] = account
+        if name:
+            params["name"] = name
 
         return update_call_center_campaign(params)
     except Exception as e:
@@ -1281,14 +1284,29 @@ def get_media_files_tool(
 
 # Phone Number Management Tools
 
-@server.tool(name="listRentedNumbers", description="List all rented calling numbers (caller IDs) for the account.")
+@server.tool(name="listRentedNumbers", description="List all rented calling numbers (caller IDs) for the account. Supports pagination and filtering.")
 def list_rented_numbers_tool(
-    account: Optional[str] = None
+    account: Optional[str] = None,
+    page_size: Optional[int] = None,
+    page: Optional[int] = None,
+    countries: Optional[str] = None,
+    order_by: Optional[str] = None,
+    order_direction: Optional[str] = None
 ) -> dict:
     try:
         params = {}
         if account:
             params["accountName"] = account
+        if page_size is not None:
+            params["page_size"] = page_size
+        if page is not None:
+            params["page"] = page
+        if countries:
+            params["countries"] = countries
+        if order_by:
+            params["order_by"] = order_by
+        if order_direction:
+            params["order_direction"] = order_direction
 
         return list_rented_numbers(params)
     except Exception as e:
@@ -1365,14 +1383,20 @@ def create_vb_campaign_template_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="listValidatedNumbers", description="List all validated personal phone numbers that can be used as caller IDs.")
+@server.tool(name="listValidatedNumbers", description="List all validated personal phone numbers that can be used as caller IDs. Supports pagination.")
 def list_validated_numbers_tool(
-    account: Optional[str] = None
+    account: Optional[str] = None,
+    page: Optional[int] = None,
+    page_size: Optional[int] = None
 ) -> dict:
     try:
         params = {}
         if account:
             params["accountName"] = account
+        if page is not None:
+            params["page"] = page
+        if page_size is not None:
+            params["page_size"] = page_size
 
         return list_validated_numbers(params)
     except Exception as e:

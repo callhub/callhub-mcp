@@ -5,6 +5,7 @@ Call Center Campaign operations for CallHub API.
 
 import sys
 import json
+import os
 from typing import Dict, Any
 
 from .client import McpApiClient
@@ -39,15 +40,16 @@ def list_call_center_campaigns(params: Dict[str, Any]) -> Dict[str, Any]:
 
 def update_call_center_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Update a call center campaign's status.
-    
+    Update a call center campaign's status and/or name.
+
     Args:
         params: Dictionary containing the following keys:
             accountName (str, optional): The account name to use
             campaignId (str): The ID of the campaign to update
-            status (str): The new status of the campaign. Valid values: 
+            status (str): The new status of the campaign. Valid values:
                          "pause", "resume", "stop", "restart"
-    
+            name (str, optional): New name for the campaign
+
     Returns:
         dict: API response from the update operation
     """
@@ -55,11 +57,11 @@ def update_call_center_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     campaign_id = params.get("campaignId")
     if not campaign_id:
         return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
-    
+
     status = params.get("status")
     if not status:
         return {"isError": True, "content": [{"type": "text", "text": "'status' is required."}]}
-    
+
     # Map string status to numeric status if needed
     status_mapping = {
         "pause": 4,
@@ -67,7 +69,7 @@ def update_call_center_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
         "stop": 5,
         "restart": 2
     }
-    
+
     # If a string status was provided, convert it to numeric
     if isinstance(status, str) and status.lower() in status_mapping:
         status = status_mapping[status.lower()]
@@ -77,15 +79,17 @@ def update_call_center_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     # Check if status is valid now
     if not isinstance(status, int):
         return {
-            "isError": True, 
+            "isError": True,
             "content": [{"type": "text", "text": "Valid 'status' is required: pause, resume, stop, restart, or a valid numeric status"}]
         }
-    
+
     try:
         client = McpApiClient(params.get("accountName"))
         data = {"status": status}
-        return client.call(f"{ENDPOINTS.CALL_CENTER_CAMPAIGNS}{campaign_id}/", "PATCH", body=data)
-        
+        if params.get("name"):
+            data["name"] = params["name"]
+        return client.call(f"{ENDPOINTS.CALL_CENTER_CAMPAIGNS}{campaign_id}/", "PUT", body=data)
+
     except Exception as e:
         sys.stderr.write(f"[callhub] Error updating call center campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

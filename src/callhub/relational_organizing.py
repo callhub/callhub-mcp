@@ -46,7 +46,7 @@ def update_relational_organizing_campaign(params: Dict[str, Any]) -> Dict[str, A
     
     client = McpApiClient(params.get("accountName"))
     # All other params are passed as the body
-    return client.call(f"{ENDPOINTS.RELATIONAL_CAMPAIGN}{campaign_id}/", "PUT", body=params)
+    return client.call(f"{ENDPOINTS.RELATIONAL_CAMPAIGN}{campaign_id}/edit", "PUT", body=params)
 
 def get_relational_organizing_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
