@@ -17,14 +17,18 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any, Union
 from io import StringIO
 from contextlib import contextmanager
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.chrome.options import Options
+try:
+    from selenium import webdriver
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    from selenium.common.exceptions import TimeoutException, NoSuchElementException
+    from webdriver_manager.chrome import ChromeDriverManager
+    from selenium.webdriver.chrome.service import Service as ChromeService
+    from selenium.webdriver.chrome.options import Options
+    SELENIUM_AVAILABLE = True
+except ImportError:
+    SELENIUM_AVAILABLE = False
 from .auth import get_account_config
 from .csv_processor import find_file
 
@@ -592,15 +596,21 @@ def parse_activation_csv(csv_content: str) -> Dict:
 def activate_agents_with_password(activation_data: List[Dict], password: str, account_name: Optional[str] = None) -> Dict:
     """
     Automate the activation of agents by visiting each activation URL and setting the provided password.
-    
+
     Args:
         activation_data: List of activation data entries, each with at least 'url' field
         password: Password to set for all activating agents
         account_name: Optional account name (not used for this function, but included for consistency)
-        
+
     Returns:
         Dict with results of activation attempts
     """
+    if not SELENIUM_AVAILABLE:
+        return {
+            "isError": True,
+            "content": [{"type": "text", "text": "Selenium is required for browser automation. Install with: pip install selenium webdriver-manager"}]
+        }
+
     if not activation_data:
         return {
             "isError": True,
@@ -961,13 +971,19 @@ def process_local_activation_csv(file_path: str) -> Dict:
 def export_agent_activation_urls_browser(account_name: Optional[str] = None) -> Dict:
     """
     Generate and return a direct URL for exporting agent activation URLs.
-    
+
     Args:
         account_name: The CallHub account name to use
-        
+
     Returns:
         Dict with the export URL and instructions
     """
+    if not SELENIUM_AVAILABLE:
+        return {
+            "isError": True,
+            "content": [{"type": "text", "text": "Selenium is required for browser automation. Install with: pip install selenium webdriver-manager"}]
+        }
+
     # Get the account configuration
     account, api_key, base_url = get_account_config(account_name)
     

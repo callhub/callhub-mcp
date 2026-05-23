@@ -21,7 +21,6 @@ def check_dependencies () :
         import pydantic
         import dotenv
         import requests
-        import selenium
         import urllib3
         return True
     except ImportError as e :
@@ -443,7 +442,7 @@ def create_agent_tool(
 
 
 
-@server.tool(name="getLiveAgents", description="Get a list of all agents currently connected to any campaign.")
+@server.tool(name="getLiveAgents", description="[Extended API] Get a list of all agents currently connected to any campaign.")
 def get_live_agents_tool(account: Optional[str] = None) -> dict:
     try:
         params = {}
@@ -1165,7 +1164,7 @@ def update_call_center_campaign_tool(
 
 
 
-@server.tool(name="createCallCenterCampaign", description="Create a new call center campaign with a complex script structure.")
+@server.tool(name="createCallCenterCampaign", description="[Extended API] Create a new call center campaign with a complex script structure.")
 def create_call_center_campaign_tool(
     account: Optional[str] = None,
     campaign_data: dict = None
@@ -1184,7 +1183,7 @@ def create_call_center_campaign_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="duplicatePowerCampaign", description="Duplicates a PowerCampaign with specified parameters.")
+@server.tool(name="duplicatePowerCampaign", description="[Extended API] Duplicates a PowerCampaign with specified parameters.")
 def duplicate_power_campaign_tool(
     campaign_id: int,
     phonebook_ids: List[int],
@@ -1223,7 +1222,7 @@ def duplicate_power_campaign_tool(
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-@server.tool(name="exportCampaignData", description="Export campaign data in specified format.")
+@server.tool(name="exportCampaignData", description="[Extended API] Export campaign data in specified format.")
 def export_campaign_data_tool(
     account: Optional[str] = None,
     campaignId: str = None,
@@ -1241,7 +1240,7 @@ def export_campaign_data_tool(
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-@server.tool(name="getCampaignStatsAdvanced", description="Get enhanced campaign statistics.")
+@server.tool(name="getCampaignStatsAdvanced", description="[Extended API] Get enhanced campaign statistics.")
 def get_campaign_stats_advanced_tool(
     account: Optional[str] = None,
     campaignId: str = None,
@@ -1260,7 +1259,7 @@ def get_campaign_stats_advanced_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="getMediaFiles", description="Retrieve a list of media files (audio, images, videos) uploaded to CallHub. Supports pagination.")
+@server.tool(name="getMediaFiles", description="[Extended API] Retrieve a list of media files (audio, images, videos) uploaded to CallHub. Supports pagination.")
 def get_media_files_tool(
     account: Optional[str] = None,
     page: Optional[int] = None,
@@ -1521,7 +1520,7 @@ def list_p2p_campaigns_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="updateP2pCampaign", description="Update a P2P campaign's status. Valid values: 'start', 'pause', 'abort', 'end' or 1-4 numerically.")
+@server.tool(name="updateP2pCampaign", description="[Extended API] Update a P2P campaign's status. Valid values: 'start', 'pause', 'abort', 'end' or 1-4 numerically.")
 def update_p2p_campaign_tool(
     account: Optional[str] = None,
     campaignId: str = None,
@@ -1553,7 +1552,7 @@ def update_p2p_campaign_tool(
 
 
 
-@server.tool(name="getP2pCampaignAgents", description="Get agents for a P2P campaign.")
+@server.tool(name="getP2pCampaignAgents", description="[Extended API] Get agents for a P2P campaign.")
 def get_p2p_campaign_agents_tool(
     account: Optional[str] = None,
     campaignId: str = None
@@ -1571,7 +1570,7 @@ def get_p2p_campaign_agents_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="addAgentsToP2pCampaign", description="Add agents to a P2P campaign.")
+@server.tool(name="addAgentsToP2pCampaign", description="[Extended API] Add agents to a P2P campaign.")
 def add_agents_to_p2p_campaign_tool(
     account: Optional[str] = None,
     campaignId: str = None,
@@ -1592,7 +1591,7 @@ def add_agents_to_p2p_campaign_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="reassignP2pAgents", description="Reassign agents in a P2P campaign.")
+@server.tool(name="reassignP2pAgents", description="[Extended API] Reassign agents in a P2P campaign.")
 def reassign_p2p_agents_tool(
     account: Optional[str] = None,
     campaignId: str = None,
@@ -1611,7 +1610,7 @@ def reassign_p2p_agents_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="getP2pSurveys", description="Get surveys for a P2P campaign.")
+@server.tool(name="getP2pSurveys", description="[Extended API] Get surveys for a P2P campaign.")
 def get_p2p_surveys_tool(
     account: Optional[str] = None,
     campaignId: Optional[str] = None
@@ -1719,7 +1718,7 @@ def create_sms_broadcast_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="getSmsBroadcast", description="Get details of an SMS broadcast campaign.")
+@server.tool(name="getSmsBroadcast", description="[Extended API] Get details of an SMS broadcast campaign.")
 def get_sms_broadcast_tool(
     account: Optional[str] = None,
     campaignId: str = None
@@ -1740,7 +1739,7 @@ def get_sms_broadcast_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="updateSmsBroadcast", description="Update an SMS broadcast campaign's status. Valid values: 'start', 'pause', 'abort', 'end' or 1-4 numerically.")
+@server.tool(name="updateSmsBroadcast", description="[Extended API] Update an SMS broadcast campaign's status. Valid values: 'start', 'pause', 'abort', 'end' or 1-4 numerically.")
 def update_sms_broadcast_tool(
     account: Optional[str] = None,
     campaignId: str = None,
@@ -1768,7 +1767,7 @@ def update_sms_broadcast_tool(
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-@server.tool(name="createP2PCampaign", description="Create a new P2P campaign with a complex script structure.")
+@server.tool(name="createP2PCampaign", description="[Extended API] Create a new P2P campaign with a complex script structure.")
 def create_p2p_campaign_tool(
     account: Optional[str] = None,
     campaign_data: dict = None
@@ -2103,7 +2102,7 @@ def create_relational_campaign_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="duplicateRelationalCampaign", description="Duplicate a relational organizing campaign.")
+@server.tool(name="duplicateRelationalCampaign", description="[Extended API] Duplicate a relational organizing campaign.")
 def duplicate_relational_campaign_tool(
     account: Optional[str] = None, campaign_id: int = None
 ) -> dict:
@@ -2118,7 +2117,7 @@ def duplicate_relational_campaign_tool(
 
 @server.tool(
     name="assignAgentsToRelationalCampaign",
-    description="Assign or remove agents to/from a relational organizing campaign.",
+    description="[Extended API] Assign or remove agents to/from a relational organizing campaign.",
 )
 def assign_agents_to_relational_campaign_tool(
     account: Optional[str] = None, campaign_id: int = None, agent_ids_to_assign: list = None, agent_ids_to_remove: list = None
@@ -2146,7 +2145,7 @@ def duplicate_sms_broadcast_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="duplicateP2pCampaign", description="Duplicate a P2P campaign.")
+@server.tool(name="duplicateP2pCampaign", description="[Extended API] Duplicate a P2P campaign.")
 def duplicate_p2p_campaign_tool(
     account: Optional[str] = None, campaign_id: int = None
 ) -> dict:
@@ -2159,7 +2158,7 @@ def duplicate_p2p_campaign_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="addAgentsToPowerCampaign", description="Add agents to a power campaign.")
+@server.tool(name="addAgentsToPowerCampaign", description="[Extended API] Add agents to a power campaign.")
 def add_agents_to_power_campaign_tool(
     account: Optional[str] = None, campaign_id: int = None, agent_ids: list = None
 ) -> dict:
@@ -2236,7 +2235,7 @@ def get_relational_campaign_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="updateRelationalCampaignStatus", description="Update the status of a relational organizing campaign.")
+@server.tool(name="updateRelationalCampaignStatus", description="[Extended API] Update the status of a relational organizing campaign.")
 def update_relational_campaign_status_tool(
     account: Optional[str] = None, campaign_id: int = None, status: str = None
 ) -> dict:
@@ -2249,7 +2248,7 @@ def update_relational_campaign_status_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="exportSmsReport", description="Export an SMS report for a campaign.")
+@server.tool(name="exportSmsReport", description="[Extended API] Export an SMS report for a campaign.")
 
 
 def export_sms_report_tool(
@@ -2288,7 +2287,7 @@ def export_sms_report_tool(
 
 
 
-@server.tool(name="exportPowerCampaign", description="Export a power campaign.")
+@server.tool(name="exportPowerCampaign", description="[Extended API] Export a power campaign.")
 
 
 def export_power_campaign_tool(
@@ -2814,7 +2813,7 @@ def get_integration_field_tool(
 
 # Extended Number Management Tools
 
-@server.tool(name="getAreaCodes", description="Get area codes for a specific country.")
+@server.tool(name="getAreaCodes", description="[Extended API] Get area codes for a specific country.")
 def get_area_codes_tool(
     account: Optional[str] = None,
     country_iso: str = None
@@ -2831,7 +2830,7 @@ def get_area_codes_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="getNumberRentRates", description="Get number rent rates for a specific country.")
+@server.tool(name="getNumberRentRates", description="[Extended API] Get number rent rates for a specific country.")
 def get_number_rent_rates_tool(
     account: Optional[str] = None,
     country_iso: str = None
@@ -2848,7 +2847,7 @@ def get_number_rent_rates_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="getAutoUnrentSettings", description="Get auto-unrent settings.")
+@server.tool(name="getAutoUnrentSettings", description="[Extended API] Get auto-unrent settings.")
 def get_auto_unrent_settings_tool(
     account: Optional[str] = None
 ) -> dict:
@@ -2862,7 +2861,7 @@ def get_auto_unrent_settings_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="updateAutoUnrentSettings", description="Update auto-unrent settings.")
+@server.tool(name="updateAutoUnrentSettings", description="[Extended API] Update auto-unrent settings.")
 def update_auto_unrent_settings_tool(
     account: Optional[str] = None,
     auto_unrent_enabled: Optional[bool] = None,
@@ -2888,7 +2887,7 @@ def update_auto_unrent_settings_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="revalidateNumbers", description="Revalidate phone numbers.")
+@server.tool(name="revalidateNumbers", description="[Extended API] Revalidate phone numbers.")
 def revalidate_numbers_tool(
     account: Optional[str] = None
 ) -> dict:
@@ -2902,7 +2901,7 @@ def revalidate_numbers_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="listSmsOnlyNumbers", description="List SMS-only rented numbers.")
+@server.tool(name="listSmsOnlyNumbers", description="[Extended API] List SMS-only rented numbers.")
 def list_sms_only_numbers_tool(
     account: Optional[str] = None
 ) -> dict:
@@ -2916,7 +2915,7 @@ def list_sms_only_numbers_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="listCombinedSmsNumbers", description="List combined validated and rented SMS numbers.")
+@server.tool(name="listCombinedSmsNumbers", description="[Extended API] List combined validated and rented SMS numbers.")
 def list_combined_sms_numbers_tool(
     account: Optional[str] = None
 ) -> dict:
@@ -2930,7 +2929,7 @@ def list_combined_sms_numbers_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="autoRentSmsNumber", description="Auto-rent SMS number.")
+@server.tool(name="autoRentSmsNumber", description="[Extended API] Auto-rent SMS number.")
 def auto_rent_sms_number_tool(
     account: Optional[str] = None,
     country_iso: str = None,
@@ -2957,7 +2956,7 @@ def auto_rent_sms_number_tool(
 
 
 
-@server.tool(name="getShortenedUrl", description="Get details of a shortened URL by its short code.")
+@server.tool(name="getShortenedUrl", description="[Extended API] Get details of a shortened URL by its short code.")
 def get_shortened_url_tool(
     account: Optional[str] = None,
     shortCode: Optional[str] = None
@@ -2974,7 +2973,7 @@ def get_shortened_url_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="listShortenedUrls", description="List all shortened URLs with optional pagination.")
+@server.tool(name="listShortenedUrls", description="[Extended API] List all shortened URLs with optional pagination.")
 def list_shortened_urls_tool(
     account: Optional[str] = None,
     page: Optional[int] = None,
@@ -2996,7 +2995,7 @@ def list_shortened_urls_tool(
 
 # API Schema and Utilities Tools
 
-@server.tool(name="getApiSchema", description="Get the complete API schema documentation.")
+@server.tool(name="getApiSchema", description="[Extended API] Get the complete API schema documentation.")
 def get_api_schema_tool(
     account: Optional[str] = None
 ) -> dict:

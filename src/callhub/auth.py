@@ -144,7 +144,7 @@ def get_account_config(account: str = None) -> tuple:
     account = account.lower()  # Normalize account name to lowercase
     
     if not creds:
-        raise ValueError("No CallHub credentials found. Please run setup.py or use the configureAccount tool.")
+        raise ValueError("No CallHub credentials found. Please run configure.py or use the configureAccount tool.")
     
     if account not in creds:
         raise ValueError(f"Account '{account}' not found in credentials.")
