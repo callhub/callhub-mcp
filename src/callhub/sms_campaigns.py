@@ -23,7 +23,7 @@ def list_sms_campaigns(params: Dict[str, Any]) -> Dict[str, Any]:
         dict: API response containing campaign data or error information
     """
     try:
-        client = McpApiClient(params.get("account"))
+        client = McpApiClient(params.get("accountName"))
 
         # Prepare query parameters
         query_params = {}
@@ -79,7 +79,7 @@ def update_sms_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
                 "content": [{"type": "text", "text": "Valid 'status' is required: start, pause, abort, end, or a valid numeric status (1-4)"}]
             }
         
-        client = McpApiClient(params.get("account"))
+        client = McpApiClient(params.get("accountName"))
 
         # Prepare data
         data = {"status": status}
@@ -105,7 +105,7 @@ def delete_sms_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
 
     try:
-        client = McpApiClient(params.get("account"))
+        client = McpApiClient(params.get("accountName"))
         return client.call(f"{ENDPOINTS.SMS_CAMPAIGNS}{campaign_id}/", "DELETE")
     except Exception as e:
         sys.stderr.write(f"[callhub] Error deleting SMS campaign: {str(e)}\n")

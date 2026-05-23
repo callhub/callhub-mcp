@@ -1136,7 +1136,7 @@ def list_call_center_campaigns_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="updateCallCenterCampaign", description="Update a call center campaign's status and/or name. Valid status values: 'pause', 'resume', 'stop', 'restart'.")
+@server.tool(name="updateCallCenterCampaign", description="Update a call center campaign. Status is required; name is optional. Valid status values: 'pause', 'resume', 'stop', 'restart'.")
 def update_call_center_campaign_tool(
     account: Optional[str] = None,
     campaignId: str = None,
@@ -1421,7 +1421,8 @@ def rent_number_tool(
     phone_number_prefix: Optional[str] = None,
     area_code: Optional[str] = None,
     prefix: Optional[str] = None,
-    setup_fee: Optional[bool] = None
+    setup_fee: Optional[bool] = None,
+    campaign_type: Optional[str] = None
 ) -> dict:
     try:
         # Validate required parameters
@@ -1443,6 +1444,8 @@ def rent_number_tool(
             params["prefix"] = prefix
         if setup_fee is not None:
             params["setup_fee"] = setup_fee
+        if campaign_type:
+            params["campaign_type"] = campaign_type
 
         return rent_number(params)
     except Exception as e:
@@ -3055,7 +3058,7 @@ def delete_sms_campaign_tool(
     try:
         params = {}
         if account:
-            params["account"] = account
+            params["accountName"] = account
         if campaignId:
             params["campaignId"] = campaignId
         return delete_sms_campaign(params)

@@ -499,6 +499,7 @@ def upload_media_file(params: Dict[str, Any]) -> Dict[str, Any]:
     if not file_path:
         return {"isError": True, "content": [{"type": "text", "text": "'file_path' is required."}]}
 
+    file_path = os.path.realpath(file_path)
     if not os.path.exists(file_path):
         return {"isError": True, "content": [{"type": "text", "text": f"File not found: {file_path}"}]}
 
@@ -521,10 +522,6 @@ def upload_media_file(params: Dict[str, Any]) -> Dict[str, Any]:
         headers = get_auth_headers(api_key)
         # Remove Content-Type so requests sets multipart boundary automatically
         headers.pop("Content-Type", None)
-
-        file_name = params.get("name") or os.path.basename(file_path)
-        if len(file_name) > 150:
-            file_name = file_name[:150]
 
         data = {}
         if params.get("name"):
