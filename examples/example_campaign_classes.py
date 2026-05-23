@@ -43,7 +43,7 @@ def sms_broadcast_example (account_name=None) :
     # Create SMS broadcast
     sms_data = {
         "name": "GOTV SMS Campaign",
-        "phonebook_ids": ["3629573562324486094"],
+        "phonebook_ids": ["YOUR_PHONEBOOK_ID"],
         "message": "Don't forget to vote on November 5th!",
         "sender_id": "15551234567",
         "schedule_date": "2025-11-05T09:00:00Z"  # Optional

@@ -100,3 +100,8 @@ temp/
 !requirements.txt
 !example_data/*.csv
 !example_data/*.json
+
+# MCP bundles (may contain local paths/settings)
+*.mcpb
+.coverage
+uv.lock

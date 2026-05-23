@@ -11,7 +11,7 @@ from src.callhub.campaigns import create_call_center_campaign
 # Example campaign data structure that conforms to CallHub's expected format
 example_campaign = {
     "name": "GOTV Campaign Example",
-    "phonebook_ids": ["3629573562324486094"],  # Replace with actual phonebook IDs
+    "phonebook_ids": ["YOUR_PHONEBOOK_ID"],  # Replace with actual phonebook IDs
     "callerid": "15551234567",  # Replace with an actual caller ID
     
     # Script structure as an array of objects with different types

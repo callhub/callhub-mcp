@@ -189,12 +189,12 @@ def create_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
 
     Example Usage:
         params = {
-            "account": "engineering+mocktest@callhub.io",
+            "accountName": "default",
             "campaign_data": {
-                "name": "VB System P2P Campaign",
-                "template_id": 3674114171558954642,  # INTEGER, not script object
+                "name": "My P2P Campaign",
+                "template_id": 1234567890123456789,
                 "phonebooks": ["1"],
-                "callerid_options": {"numbers": ["12232017834"]}
+                "callerid_options": {"numbers": ["15551234567"]}
             }
         }
     """
