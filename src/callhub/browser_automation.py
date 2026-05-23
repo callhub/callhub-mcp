@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Browser automation helper for CallHub operations that require session authentication.
 
