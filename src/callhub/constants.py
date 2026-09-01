@@ -50,4 +50,7 @@ class ENDPOINTS:
     CONTACTS_BULK_CREATE = "/v1/contacts/bulk_create/"
     CONTACTS_FIELDS = "/v1/contacts/fields/"
     RELATIONAL_CAMPAIGN = "/email/v1/relational-campaign/"
+    CONTACT_NOTES = "/v2/contact-notes/"
+    SUPPRESSION_LIST_CONTACTS = "/suppression-lists/"
+    EXPORT_JOB_STATUS = "/v1/export_data/"
 

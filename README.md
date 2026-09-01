@@ -1,202 +1,112 @@
-# CallHub
+# CallHub MCP Extension
 
-A Claude-powered tool for managing CallHub resources via API
+Manage your CallHub account from Claude, in natural language — contacts and
+contact lists, tags and custom fields, agents and teams, campaigns (call center,
+voice broadcast, text broadcast, P2P, relational), DNC lists, phone numbers,
+webhooks, and reporting.
 
-## Overview
+This is a local [MCP](https://modelcontextprotocol.io) server packaged as a
+Claude Desktop extension (`.mcpb`). It talks to the CallHub REST API using an
+API key.
 
-CallHub MCP is a Python-based tool that allows you to interact with the CallHub API through Claude. This tool provides a comprehensive set of functions for managing contacts, phonebooks, agents, teams, campaigns, and other CallHub resources.
+## Install (Claude Desktop)
 
-## Features
+1. Download `callhub.mcpb` from the
+   [latest release](https://github.com/callhub/callhub-mcp/releases).
+2. Open **Claude Desktop → Settings → Extensions** and drag the file in
+   (or double-click it).
+3. When prompted, enter your extension settings. The API Key and API Domain are
+   both in your CallHub dashboard under **Settings → Account → API Key**:
+   - **API Key** — the key shown there.
+   - **API Domain** — the API Domain shown there (region-specific), e.g.
+     `https://api-na1.callhub.io`.
+   - **Username** *(optional)* — your CallHub login email.
+4. Enable the extension. The CallHub tools are now available in your chats.
 
-- **Account Management**: Configure and manage multiple CallHub accounts
-- **Contact Management**: Create, retrieve, update, and delete contacts
-- **Phonebook Management**: Create and manage phonebooks and their contacts
-- **Agent Management**: Create, activate, and manage agents
-- **Team Management**: Create and manage teams and team memberships
-- **Campaign Management**: Manage call center, voice broadcast,P2P and SMS campaigns
-- **DNC Management**: Create and manage Do Not Call lists
-- **Bulk Operations**: Upload and process CSV files for bulk operations
-- **Error Handling**: Robust error handling with retries and rate limit awareness
+**Requirements:** Claude Desktop, and Python 3.10+ available on your system.
+The current released bundle is built for **macOS (Apple Silicon)**; for other
+platforms, build from source (below).
 
-## Installation
+## Usage
 
-Download [Callhub](https://github.com/callhub/callhub-mcp/blob/main/callhub.mcpb) & open in claude ( Requires Python 3.10 )
+Talk to Claude naturally:
 
-### Prerequisites
+- "Create a contact with phone 1234567890, first name John, last name Doe, and
+  add them to a new contact list called VIP Customers."
+- "Show me all my teams, then create a new agent in the Sales team."
+- "List my voice broadcast campaigns and duplicate the one called Fall Drive."
+- "Search my contacts for jane@example.com."
 
-- Python 3.10+ 
-- An active CallHub account with API access
-- API credentials (username, API key, base URL)
-- Claude access with MCP capability
+### Multiple accounts
 
+The API key you enter in settings is your **`default`** account. To work with
+more accounts, ask Claude to configure one by name:
 
-### Setup
+> "Configure a CallHub account called *personal* with API key … and base URL …"
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/callhub/callhub-mcp.git
-   cd callhub-mcp
-   ```
+Then refer to it by name — "list the teams in my *personal* account." Requests
+with no account named use `default`.
 
-2. Create a virtual environment:
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
+## Tool naming
 
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+Tools follow CallHub's product vocabulary (verb + noun), e.g. `createContactList`,
+`listCallCenterCampaigns`, `createVoiceBroadcastCampaign`, `createTextBroadcast`,
+`addTagsToContact`. A *contact list* is the same thing the API sometimes calls a
+*phonebook*.
 
-4. Configure credentials using the setup wizard:
-   ```bash
-   python setup.py
-   ```
+Older tool names from earlier versions (e.g. `createPhonebook`, `createVbCampaign`,
+`createSmsBroadcast`) still work as **hidden aliases**, so existing saved flows
+keep functioning; new work should use the canonical names.
 
-## Claude Configuration
+## Agent activation
 
-To use the CallHub MCP with Claude, you need to add it to Claude's configuration:
+Newly created agents start in a *pending* state and must verify their email
+before they appear in `listAgents`. Pending agents are managed through the
+activation-export workflow:
 
-1. **Add the MCP to Claude's Configuration File**:
-   - Locate your Claude configuration file
-   - Add the following configuration:
+1. `exportAgentActivationUrls` (or `getAgentActivationExportUrl`) to obtain the
+   export.
+2. Download the activation CSV from the CallHub UI.
+3. `processAgentActivationCsv` (or `processUploadedActivationCsv`) to read it.
 
-   ```json
-   "callhub-mcp": {
-     "command": "/path/to/callhub-mcp/.venv/bin/python",
-     "args": [
-       "/path/to/callhub-mcp/src/server.py"
-     ]
-   }
-   ```
+> Note: earlier versions bundled a Selenium/Chrome browser-automation flow that
+> set agent passwords automatically. That has been removed to keep the extension
+> lightweight and reliable. Distribute the activation URLs to agents, or activate
+> them through the CallHub UI.
 
-   Make sure to replace:
-   - `/path/to/callhub-mcp-py` with the actual path where you cloned the repository
-   
-   Note: Claude will automatically start and manage the MCP server process. You don't need to manually start or stop it.
+## Build from source
 
-2. **Using the MCP in Claude**:
-   - After adding the configuration, Claude will automatically load the CallHub MCP
-   - When you start a conversation with Claude, the CallHub tools will be available
-   - You can use the `configureAccount` tool to set up your CallHub credentials the first time
+Building produces a `callhub.mcpb` for the platform you build on (Python and OS
+of the build machine), because some dependencies ship compiled wheels.
 
-3. **First-time Setup**:
-   - Once connected, ask Claude to configure your CallHub account:
-     ```
-     I need to set up my CallHub account credentials. Can you help me?
-     ```
-   - Claude will guide you through using the `configureAccount` tool
-
-4. **Starting to Use the MCP**:
-   - Ask Claude about available functions:
-     ```
-     What CallHub tools are available?
-     ```
-   - Claude will show you the available tools and how to use them
-
-## Configuration
-
-CallHub MCP supports multiple accounts with descriptive names. Configuration is stored in the `.env` file:
-
-```
-# Default account
-CALLHUB_DEFAULT_USERNAME=your_username
-CALLHUB_DEFAULT_API_KEY=your_api_key
-CALLHUB_DEFAULT_BASE_URL=https://api-na1.callhub.io
-
-# Personal account
-CALLHUB_PERSONAL_USERNAME=personal_username
-CALLHUB_PERSONAL_API_KEY=personal_api_key
-CALLHUB_PERSONAL_BASE_URL=https://api-na1.callhub.io
-
-# Client account
-CALLHUB_CLIENT_USERNAME=client_username
-CALLHUB_CLIENT_API_KEY=client_api_key
-CALLHUB_CLIENT_BASE_URL=https://api-na1.callhub.io
+```bash
+git clone https://github.com/callhub/callhub-mcp.git
+cd callhub-mcp
+./build.sh          # vendors deps into src/lib, validates the manifest, packs callhub.mcpb
 ```
 
-You can use any descriptive name for your accounts (letters, numbers, and underscores only). The account name is extracted from the environment variable name - for example, `CALLHUB_PERSONAL_API_KEY` creates an account named "personal" that you can reference in API calls.
+Requirements: `python3` (3.10+) and the [`mcpb`](https://github.com/anthropics/mcpb)
+CLI (invoked via `npx @anthropic-ai/mcpb`, so Node.js is needed at build time).
 
-To use a specific account for an API call, just mention the account name to Claude in natural language:
-```
-Claude, can you list the teams in my personal account?
-```
+### Project layout
 
-If no account is specified, the "default" account is used.
+- `manifest.json` — MCPB extension manifest (server entry, `user_config`).
+- `src/server.py` — registers every tool and starts the MCP server (stdio).
+- `src/callhub/` — API client, auth, and one module per resource
+  (contacts, phonebooks, campaigns, numbers, dnc, teams, …).
+- `build.sh` — reproducible bundle build.
 
-## Example Conversations with Claude
+## Error handling
 
-Here are some example prompts to get started with Claude and the CallHub MCP:
+Requests retry transient errors with backoff and respect rate limits. Errors
+return a structured message describing what went wrong.
 
-### Configuring an Account
-```
-I need to set up my CallHub account. My username is user@example.com, my API key is abc123def456, and the base URL is https://api-na1.callhub.io. Can you configure this for me?
-```
+## Security
 
-### Creating and Managing Contacts
-```
-I'd like to create a new contact with phone number 1234567890, first name John, and last name Doe. After that, can you add this contact to a new phonebook called "VIP Customers"?
-```
-
-### Agent Management
-```
-Can you show me all the teams in my CallHub account? I'd like to create a new agent in the "Sales" team.
-```
-
-### Using Multiple Accounts
-```
-First, I need to check the teams in my client account. Then, create a similar team structure in my personal account.
-```
-
-## Server Restart Guidelines
-
-The CallHub MCP server must be restarted manually by the user after any code changes.
-If you're using Claude or another AI assistant to modify this code:
-
-1. The AI should NEVER assume a restart has occurred
-2. The AI should ALWAYS pause after suggesting code changes
-3. The AI should explicitly ask the user to restart the server
-4. The AI should wait for confirmation before proceeding with testing
-
-This is critical for ensuring code changes take effect before testing.
-
-## Error Handling
-
-The MCP implements robust error handling with automatic retries for transient errors and rate limiting. Error responses include detailed information about what went wrong and potential solutions.
-
-## Agent Activation Workflow
-
-When new agents are created via the API, they exist in a 'pending' state and must verify their email before becoming active. These pending agents are:
-- NOT visible through the standard listAgents API (even with include_pending=true)
-- NOT manageable through direct API calls
-- Only accessible through the activation exports workflow
-
-To activate pending agents:
-1. Use exportAgentActivationUrls or getAgentActivationExportUrl to obtain the export URL
-2. User downloads the activation CSV file from the CallHub UI
-3. Process the CSV using processAgentActivationCsv or related functions
-4. Activate agents using activateAgentsWithPassword or activateAgentsWithBatchPassword
-
-IMPORTANT: NEVER create new test agents to check activation status - this workflow is specifically designed because pending agents are not accessible through direct API calls.
-
-## Security Considerations
-
-- Store your credentials securely
-- Do not share your `.env` file
-- Be cautious with browser automation features
-- Follow the principle of least privilege when creating API keys
-
-## Troubleshooting
-
-- If you encounter rate limits, the tool will automatically retry with backoff
-- For persistent errors, check your credentials and network connectivity
-- Log files are written to logs directory with automatic rotation
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+- Your API key is stored by Claude Desktop's extension settings; it is passed to
+  the server as an environment variable, not committed to disk in this repo.
+- Use an API key scoped to the least privilege you need.
 
 ## License
 
-[MIT License](LICENSE)
+[MIT](LICENSE)

@@ -223,3 +223,13 @@ def validate_vb_campaign_params(params: Dict[str, Any]) -> Dict[str, Any]:
         "valid": True,
         "errors": []
     }
+
+
+def list_voice_broadcast_templates(params: Dict[str, Any]) -> Dict[str, Any]:
+    """List voice broadcast templates."""
+    client = McpApiClient(params.get("accountName"))
+    query = {}
+    page = params.get("page")
+    if page is not None:
+        query["page"] = page
+    return client.call(ENDPOINTS.VB_TEMPLATES, "GET", query=query)

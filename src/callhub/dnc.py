@@ -227,3 +227,25 @@ def delete_dnc_list(params: Dict[str, Any]) -> Dict[str, Any]:
 
     client = McpApiClient(params.get("account"))
     return client.call(f"{ENDPOINTS.DNC_LISTS}{list_id}/", "DELETE")
+
+
+def add_to_suppression_list(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Bulk-add numbers to a suppression list (a Call Center feature, distinct
+    from DNC). Side effect: those numbers are excluded from campaigns using
+    this suppression list.
+
+    Args:
+        params: Dictionary with:
+            - accountName (optional): The account to use
+            - listId (str): The suppression list ID
+            - records (list): [{"phone_number": ..., "mobile_number": ...}, ...]
+    """
+    list_id = params.get("listId")
+    if not list_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'listId' is required."}]}
+    records = params.get("records")
+    if not records:
+        return {"isError": True, "content": [{"type": "text", "text": "'records' is required (a non-empty list)."}]}
+    client = McpApiClient(params.get("accountName"))
+    return client.call(f"{ENDPOINTS.SUPPRESSION_LIST_CONTACTS}{list_id}/contacts/", "POST", body=records)

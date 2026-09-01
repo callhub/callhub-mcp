@@ -94,9 +94,14 @@ temp/
 !tsconfig.json
 !.json
 !example*.json
+!manifest.json
+!glama.json
 
 # Exception files
 !.env.example
 !requirements.txt
 !example_data/*.csv
 !example_data/*.json
+# Built extension bundle — distribute via GitHub Releases, do not track in git
+callhub.mcpb
+*.mcpb

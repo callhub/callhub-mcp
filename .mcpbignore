@@ -1,9 +1,25 @@
+# Python caches
 *.pyc
 **/__pycache__/
+
+# Logs and local env
 logs/
-README.md
+.env
+.env.local
+
+# Dev-only files (not needed inside the shipped bundle)
 setup.py
-LICENSE
-.idea
+build.sh
 .venv/
-/src/lib
+.idea/
+.vscode/
+.claude/
+tests/
+pytests/
+
+# Never ship the build artifact or VCS metadata inside itself
+*.mcpb
+.git/
+.github/
+
+# NOTE: src/lib IS bundled on purpose — it holds the vendored dependencies.

@@ -451,3 +451,33 @@ def export_power_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
 
     client = McpApiClient(params.get("accountName"))
     return client.call(f"{ENDPOINTS.POWER_CAMPAIGN}{campaign_id}/export/", "GET")
+
+
+def get_call_center_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
+    """Get a single call center (power) campaign by ID."""
+    campaign_id = params.get("campaignId")
+    if not campaign_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+    client = McpApiClient(params.get("accountName"))
+    return client.call(f"{ENDPOINTS.CALL_CENTER_CAMPAIGNS}{campaign_id}/", "GET")
+
+
+def delete_call_center_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
+    """Delete a call center (power) campaign by ID. Permanent."""
+    campaign_id = params.get("campaignId")
+    if not campaign_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+    client = McpApiClient(params.get("accountName"))
+    return client.call(f"{ENDPOINTS.CALL_CENTER_CAMPAIGNS}{campaign_id}/", "DELETE")
+
+
+def get_export_job_status(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Poll an export job by job_id (returned by export endpoints). When the job
+    is complete the response includes the download URL.
+    """
+    job_id = params.get("jobId")
+    if not job_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'jobId' is required."}]}
+    client = McpApiClient(params.get("accountName"))
+    return client.call(f"{ENDPOINTS.EXPORT_JOB_STATUS}export_{job_id}/", "GET")

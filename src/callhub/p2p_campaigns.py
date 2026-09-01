@@ -347,3 +347,12 @@ def duplicate_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as e:
         sys.stderr.write(f"[callhub] Error duplicating P2P campaign: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+def get_p2p_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
+    """Get a single P2P campaign by ID."""
+    campaign_id = params.get("campaignId")
+    if not campaign_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+    client = McpApiClient(params.get("accountName"))
+    return client.call(f"{ENDPOINTS.P2P_CAMPAIGNS}{campaign_id}/", "GET")
