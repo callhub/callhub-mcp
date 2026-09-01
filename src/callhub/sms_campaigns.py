@@ -98,3 +98,16 @@ def export_sms_report(params: Dict[str, Any]) -> Dict[str, Any]:
 
     client = McpApiClient(params.get("accountName"))
     return client.call(ENDPOINTS.SMS_CAMPAIGN_REPORT_EXPORT, "GET", query={"campaign_id": campaign_id})
+
+
+def delete_sms_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
+    """Delete an SMS campaign by ID. Permanent."""
+    campaign_id = params.get("campaignId")
+    if not campaign_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+    try:
+        client = McpApiClient(params.get("account"))
+        return client.call(f"{ENDPOINTS.SMS_CAMPAIGNS}{campaign_id}/", "DELETE")
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error deleting SMS campaign: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

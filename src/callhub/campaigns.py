@@ -481,3 +481,66 @@ def get_export_job_status(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"isError": True, "content": [{"type": "text", "text": "'jobId' is required."}]}
     client = McpApiClient(params.get("accountName"))
     return client.call(f"{ENDPOINTS.EXPORT_JOB_STATUS}export_{job_id}/", "GET")
+
+
+def upload_media_file(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Upload a local media file (audio/image/video/GIF) to the CallHub media library.
+
+    Args:
+        params: Dictionary with:
+            accountName (str, optional): The account name to use
+            file_path (str): Local file path to upload
+            name (str, optional): Display name for the media file (max 150 chars)
+            generate_gif (bool, optional): Whether to generate a GIF thumbnail
+    """
+    import os
+    file_path = params.get("file_path")
+    if not file_path:
+        return {"isError": True, "content": [{"type": "text", "text": "'file_path' is required."}]}
+
+    file_path = os.path.realpath(file_path)
+    if not os.path.exists(file_path):
+        return {"isError": True, "content": [{"type": "text", "text": f"File not found: {file_path}"}]}
+
+    allowed_extensions = {".mp3", ".wav", ".ogg", ".mp4", ".mov", ".3gp", ".3gpp",
+                          ".jpg", ".jpeg", ".png", ".gif"}
+    _, ext = os.path.splitext(file_path.lower())
+    if ext not in allowed_extensions:
+        return {
+            "isError": True,
+            "content": [{"type": "text", "text": f"Unsupported file extension '{ext}'. Allowed: {', '.join(sorted(allowed_extensions))}"}]
+        }
+
+    try:
+        from .auth import get_account_config
+        from .utils import build_url, get_auth_headers
+        import requests
+
+        account, api_key, base_url = get_account_config(params.get("accountName"))
+        url = build_url(base_url, ENDPOINTS.MEDIA_UPLOAD)
+        headers = get_auth_headers(api_key)
+        # Remove Content-Type so requests sets the multipart boundary automatically.
+        headers.pop("Content-Type", None)
+
+        data = {}
+        if params.get("name"):
+            data["name"] = params["name"]
+        if params.get("generate_gif") is not None:
+            data["generate_gif"] = str(params["generate_gif"]).lower()
+
+        with open(file_path, "rb") as f:
+            files = {"file": (os.path.basename(file_path), f)}
+            verify_ssl = not any(h in url.lower() for h in ["0.0.0.0", "localhost", "127.0.0.1"])
+            resp = requests.post(url, headers=headers, files=files, data=data, verify=verify_ssl, timeout=120)
+
+        if resp.status_code >= 400:
+            error_text = resp.text[:500] if resp.text else f"HTTP {resp.status_code}"
+            return {"isError": True, "content": [{"type": "text", "text": error_text}]}
+        try:
+            return resp.json()
+        except Exception:
+            return {"success": True, "status_code": resp.status_code, "text": resp.text[:500]}
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error uploading media file: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

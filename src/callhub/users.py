@@ -72,3 +72,28 @@ def get_credit_usage(params: Dict[str, Any]) -> Dict[str, Any]:
         return {"format": "csv", "data": csv_data, "success": True}
 
     return result
+
+
+def share_credits(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Share credits from an enterprise account to a subaccount.
+
+    Args:
+        params: Dictionary with:
+            accountName (str, optional): The account name to use
+            subaccount (str): Username of the subaccount to receive credits
+            transfer_amount (int): Number of credits to transfer
+    """
+    subaccount = params.get("subaccount")
+    if not subaccount:
+        return {"isError": True, "content": [{"type": "text", "text": "'subaccount' is required."}]}
+    transfer_amount = params.get("transfer_amount")
+    if transfer_amount is None:
+        return {"isError": True, "content": [{"type": "text", "text": "'transfer_amount' is required."}]}
+    try:
+        client = McpApiClient(params.get("accountName"))
+        data = {"subaccount": subaccount, "transfer_amount": int(transfer_amount)}
+        return client.call(ENDPOINTS.SHARE_CREDITS, "POST", body=data)
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error sharing credits: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

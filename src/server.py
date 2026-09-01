@@ -1658,7 +1658,7 @@ def update_sms_broadcast_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 @server.tool(name="createP2pCampaign", description="Create a new P2P campaign with a complex script structure.")
-def dsafdsf(
+def create_p2p_campaign_tool(
     account: Optional[str] = None,
     campaign_data: dict = None
 ) -> dict:
@@ -1738,7 +1738,7 @@ def create_dnc_contact_tool(
     """
     try:
         # Parameters are passed directly to the imported function
-        return create_dnc_contact(account=account, dnc=dnc, phone_number=phone_number, category=category)
+        return create_dnc_contact({"account": account, "dnc": dnc, "phone_number": phone_number, "category": category})
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -1752,7 +1752,7 @@ def list_dnc_contacts_tool(
 ) -> dict:
     try:
         # Parameters are passed directly to the imported function
-        return list_dnc_contacts(account=account, page=page, pageSize=pageSize, allPages=allPages)
+        return list_dnc_contacts({"account": account, "page": page, "pageSize": pageSize, "allPages": allPages})
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -1766,7 +1766,7 @@ def update_dnc_contact_tool(
 ) -> dict:
     try:
         # Parameters are passed directly to the imported function
-        return update_dnc_contact(account=account, contactId=contactId, dnc=dnc, phone_number=phone_number)
+        return update_dnc_contact({"account": account, "contactId": contactId, "dnc": dnc, "phone_number": phone_number})
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -1778,7 +1778,7 @@ def delete_dnc_contact_tool(
 ) -> dict:
     try:
         # Parameters are passed directly to the imported function
-        return delete_dnc_contact(account=account, contactId=contactId)
+        return delete_dnc_contact({"account": account, "contactId": contactId})
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -1917,7 +1917,7 @@ def create_dnc_list_tool(
 ) -> dict:
     try:
         # Parameters are passed directly to the imported function
-        return create_dnc_list(account=account, name=name)
+        return create_dnc_list({"account": account, "name": name})
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -1931,7 +1931,7 @@ def list_dnc_lists_tool(
 ) -> dict:
     try:
         # Parameters are passed directly to the imported function
-        return list_dnc_lists(account=account, page=page, pageSize=pageSize, allPages=allPages)
+        return list_dnc_lists({"account": account, "page": page, "pageSize": pageSize, "allPages": allPages})
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -2195,7 +2195,7 @@ def update_dnc_list_tool(
 ) -> dict:
     try:
         # Parameters are passed directly to the imported function
-        return update_dnc_list(account=account, listId=listId, name=name)
+        return update_dnc_list({"account": account, "listId": listId, "name": name})
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -2207,7 +2207,7 @@ def delete_dnc_list_tool(
 ) -> dict:
     try:
         # Parameters are passed directly to the imported function
-        return delete_dnc_list(account=account, listId=listId)
+        return delete_dnc_list({"account": account, "listId": listId})
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -2804,6 +2804,80 @@ def add_to_suppression_list_tool(listId: str, records: List[Dict], account: Opti
         if account:
             params["accountName"] = account
         return add_to_suppression_list(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+from callhub.vb_campaigns import (
+    delete_voice_broadcast_campaign,
+    update_voice_broadcast_campaign,
+)
+from callhub.sms_campaigns import delete_sms_campaign
+from callhub.users import share_credits
+from callhub.campaigns import upload_media_file
+
+
+@server.tool(name="deleteVoiceBroadcastCampaign", description="Delete a voice broadcast campaign by ID. This is permanent.")
+def delete_voice_broadcast_campaign_tool(campaignId: str, account: Optional[str] = None) -> dict:
+    try:
+        params = {"campaignId": campaignId}
+        if account:
+            params["accountName"] = account
+        return delete_voice_broadcast_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="updateVoiceBroadcastCampaign", description="Update a voice broadcast campaign by ID. Optional: name, status (int), frequency (calls per minute).")
+def update_voice_broadcast_campaign_tool(campaignId: str, account: Optional[str] = None, name: Optional[str] = None, status: Optional[int] = None, frequency: Optional[int] = None) -> dict:
+    try:
+        params = {"campaignId": campaignId}
+        if account:
+            params["accountName"] = account
+        if name is not None:
+            params["name"] = name
+        if status is not None:
+            params["status"] = status
+        if frequency is not None:
+            params["frequency"] = frequency
+        return update_voice_broadcast_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="deleteTextBroadcast", description="Delete an SMS/text broadcast campaign by ID. This is permanent.")
+def delete_text_broadcast_tool(campaignId: str, account: Optional[str] = None) -> dict:
+    try:
+        params = {"campaignId": campaignId}
+        if account:
+            params["account"] = account
+        return delete_sms_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="uploadMediaFile", description="Upload a local media file (audio/image/video/GIF) to the CallHub media library. Provide file_path (a local path), optional name and generate_gif.")
+def upload_media_file_tool(file_path: str, account: Optional[str] = None, name: Optional[str] = None, generate_gif: Optional[bool] = None) -> dict:
+    try:
+        params = {"file_path": file_path}
+        if account:
+            params["accountName"] = account
+        if name is not None:
+            params["name"] = name
+        if generate_gif is not None:
+            params["generate_gif"] = generate_gif
+        return upload_media_file(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="shareCredits", description="Share credits from an enterprise account to a subaccount. Requires subaccount (username) and transfer_amount (integer).")
+def share_credits_tool(subaccount: str, transfer_amount: int, account: Optional[str] = None) -> dict:
+    try:
+        params = {"subaccount": subaccount, "transfer_amount": transfer_amount}
+        if account:
+            params["accountName"] = account
+        return share_credits(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
