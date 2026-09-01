@@ -2187,7 +2187,10 @@ def export_power_campaign_tool(
     except Exception as e:
 
 
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}@server.tool(name="updateDncList", description="Update an existing DNC list by ID.")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="updateDncList", description="Update an existing DNC list by ID.")
 def update_dnc_list_tool(
     account: Optional[str] = None,
     listId: str = None, # DNC List ID

@@ -1,6 +1,7 @@
 # Python caches
 *.pyc
 **/__pycache__/
+.pytest_cache/
 
 # Logs and local env
 logs/
@@ -16,6 +17,8 @@ build.sh
 .claude/
 tests/
 pytests/
+pytest.ini
+requirements-test.txt
 
 # Never ship the build artifact or VCS metadata inside itself
 *.mcpb
