@@ -503,6 +503,20 @@ def upload_media_file(params: Dict[str, Any]) -> Dict[str, Any]:
     if not os.path.exists(file_path):
         return {"isError": True, "content": [{"type": "text", "text": f"File not found: {file_path}"}]}
 
+    # Path confinement: only read files inside an approved root. Defaults to the
+    # user's home directory; set CALLHUB_MEDIA_DIR to restrict further. This
+    # prevents a prompt-influenced call from reading files elsewhere on the host
+    # (e.g. system paths or other users' files). realpath above resolves
+    # symlinks so a link inside the root cannot escape it.
+    allowed_root = os.path.realpath(
+        os.environ.get("CALLHUB_MEDIA_DIR") or os.path.expanduser("~")
+    )
+    if os.path.commonpath([file_path, allowed_root]) != allowed_root:
+        return {
+            "isError": True,
+            "content": [{"type": "text", "text": f"Refusing to read '{file_path}': outside the allowed upload directory ({allowed_root}). Move the file there or set CALLHUB_MEDIA_DIR."}]
+        }
+
     allowed_extensions = {".mp3", ".wav", ".ogg", ".mp4", ".mov", ".3gp", ".3gpp",
                           ".jpg", ".jpeg", ".png", ".gif"}
     _, ext = os.path.splitext(file_path.lower())

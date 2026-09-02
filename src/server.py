@@ -1185,16 +1185,15 @@ def get_media_files_tool(
         params = {}
         if account:
             params["accountName"] = account
-        if page is not None:
-            params["page"] = page
         if pageSize is not None:
-            params["pageSize"] = pageSize
+            params["limit"] = pageSize
+        if page is not None and pageSize is not None:
+            params["offset"] = (page - 1) * pageSize
         if file_type:
-            params["file_type"] = file_type
+            params["media_type"] = file_type
         if search:
-            params["search"] = search
+            params["name"] = search
 
-        # Assuming a function `list_media_files` exists in `callhub.media`
         return get_media_files(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -2048,7 +2047,7 @@ def duplicate_vb_campaign_tool(
     try:
         params = {"campaignId": campaign_id}
         if account:
-            params["accountName"] = account
+            params["account"] = account
         return duplicate_vb_campaign(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -2172,7 +2171,7 @@ def export_power_campaign_tool(
     try:
 
 
-        params = {"campaignId": campaign_id}
+        params = {"campaign_id": campaign_id}
 
 
         if account:
