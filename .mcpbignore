@@ -26,3 +26,6 @@ requirements-test.txt
 .github/
 
 # NOTE: src/lib IS bundled on purpose — it holds the vendored dependencies.
+
+# Do not nest built bundles inside a bundle
+dist/

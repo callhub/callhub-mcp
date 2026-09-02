@@ -30,15 +30,19 @@ for Claude Desktop.
 
 ## Install — Claude Desktop
 
-1. Download `callhub.mcpb` from the
-   [latest release](https://github.com/callhub/callhub-mcp/releases).
+1. Download the bundle for your platform from [`dist/`](dist/) (or the
+   [latest release](https://github.com/callhub/callhub-mcp/releases)):
+   - macOS (Apple Silicon): `callhub-macos-arm64.mcpb`
+   - macOS (Intel): `callhub-macos-x64.mcpb`
+   - Windows (x64): `callhub-win-x64.mcpb`
+   - Linux (x64): `callhub-linux-x64.mcpb`
 2. Open **Claude Desktop → Settings → Extensions** and drag the file in
    (or double-click it).
 3. Enter your extension settings (see [Configuration](#configuration)).
 4. Enable the extension. The CallHub tools are now available.
 
-**Requirements:** Python 3.10+ available on the system. The released bundle is
-built for macOS (Apple Silicon); for other platforms, build from source.
+**Requirements:** Python 3.10–3.14 available on the system. Each bundle vendors
+its dependencies for every Python version in that range, so any of them works.
 
 ## Install — other MCP clients
 
@@ -150,8 +154,13 @@ Building produces a `callhub.mcpb` for the platform you build on (some
 dependencies ship compiled wheels, so the bundle is OS/architecture-specific).
 
 ```bash
-./build.sh          # vendors deps into src/lib, validates the manifest, packs callhub.mcpb
+./build.sh          # single bundle for the current platform (vendors deps into src/lib, packs callhub.mcpb)
+./build-all.sh      # all four platform bundles into dist/ (multi-Python: 3.10-3.14)
 ```
+
+`build-all.sh` cross-downloads platform wheels (no execution needed) and packs
+one bundle per platform, each containing the compiled dependencies for every
+supported Python version side by side.
 
 Requirements: `python3` (3.10+) and the [`mcpb`](https://github.com/anthropics/mcpb)
 CLI (invoked via `npx @anthropic-ai/mcpb`, so Node.js is needed at build time).
