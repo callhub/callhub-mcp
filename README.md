@@ -96,6 +96,12 @@ You need two values, both from your CallHub dashboard under
 In Claude Desktop these are the extension settings. For other clients, set them
 as the `CALLHUB_API_KEY` and `CALLHUB_BASE_URL` environment variables.
 
+**Media uploads (optional):** `uploadMediaFile` is disabled unless you point it
+at an approved folder — the **Media upload directory** setting, or the
+`CALLHUB_MEDIA_DIR` environment variable. The tool can then read files **only**
+from inside that folder (in addition to a media-extension check), so it can
+never read arbitrary files on the host.
+
 ## Multiple accounts
 
 The key you configure is your **`default`** account. To use more accounts, ask

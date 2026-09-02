@@ -503,18 +503,28 @@ def upload_media_file(params: Dict[str, Any]) -> Dict[str, Any]:
     if not os.path.exists(file_path):
         return {"isError": True, "content": [{"type": "text", "text": f"File not found: {file_path}"}]}
 
-    # Path confinement: only read files inside an approved root. Defaults to the
-    # user's home directory; set CALLHUB_MEDIA_DIR to restrict further. This
-    # prevents a prompt-influenced call from reading files elsewhere on the host
-    # (e.g. system paths or other users' files). realpath above resolves
-    # symlinks so a link inside the root cannot escape it.
-    allowed_root = os.path.realpath(
-        os.environ.get("CALLHUB_MEDIA_DIR") or os.path.expanduser("~")
-    )
+    # Path confinement: uploads are read only from an explicitly approved
+    # directory that the operator opts into via CALLHUB_MEDIA_DIR (exposed as the
+    # "Media upload directory" extension setting). There is deliberately no
+    # default root, so a prompt-influenced call cannot read arbitrary files on
+    # the host. realpath above resolves symlinks so a link inside the approved
+    # directory cannot escape it.
+    media_dir = os.environ.get("CALLHUB_MEDIA_DIR")
+    if not media_dir:
+        return {
+            "isError": True,
+            "content": [{"type": "text", "text": "Media upload is not enabled: set an approved upload directory (the 'Media upload directory' setting / CALLHUB_MEDIA_DIR). Uploads are confined to that directory."}]
+        }
+    allowed_root = os.path.realpath(media_dir)
+    if not os.path.isdir(allowed_root):
+        return {
+            "isError": True,
+            "content": [{"type": "text", "text": f"The configured upload directory does not exist: {allowed_root}"}]
+        }
     if os.path.commonpath([file_path, allowed_root]) != allowed_root:
         return {
             "isError": True,
-            "content": [{"type": "text", "text": f"Refusing to read '{file_path}': outside the allowed upload directory ({allowed_root}). Move the file there or set CALLHUB_MEDIA_DIR."}]
+            "content": [{"type": "text", "text": f"Refusing to read '{file_path}': outside the approved upload directory ({allowed_root})."}]
         }
 
     allowed_extensions = {".mp3", ".wav", ".ogg", ".mp4", ".mov", ".3gp", ".3gpp",

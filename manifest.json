@@ -25,7 +25,8 @@
         "PYTHONPATH": "${__dirname}/src/lib",
         "CALLHUB_API_KEY": "${user_config.api_key}",
         "CALLHUB_USERNAME": "${user_config.username}",
-        "CALLHUB_BASE_URL": "${user_config.base_url}"
+        "CALLHUB_BASE_URL": "${user_config.base_url}",
+        "CALLHUB_MEDIA_DIR": "${user_config.media_dir}"
       }
     }
   },
@@ -47,6 +48,12 @@
       "type": "string",
       "title": "Username (email)",
       "description": "Optional. The email address of your CallHub login, stored alongside the default account.",
+      "required": false
+    },
+    "media_dir": {
+      "type": "directory",
+      "title": "Media upload directory",
+      "description": "Optional. A folder to allow media uploads from. The uploadMediaFile tool can only read files inside this folder; leave empty to disable media uploads.",
       "required": false
     }
   },

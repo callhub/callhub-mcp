@@ -36,17 +36,28 @@ def test_duplicate_vb_wrapper_passes_account(monkeypatch):
     assert captured["campaignId"] == 7
 
 
-def test_upload_media_file_confines_to_allowed_root(monkeypatch):
-    # A system path outside the home directory must be refused.
+def test_upload_media_disabled_without_media_dir(monkeypatch):
+    # With no approved directory configured, media upload is disabled entirely
+    # (no host-wide default root).
     monkeypatch.delenv("CALLHUB_MEDIA_DIR", raising=False)
     result = srv.upload_media_file_tool(file_path="/etc/hosts")
     assert result.get("isError") is True
-    assert "allowed upload directory" in str(result).lower()
+    assert "not enabled" in str(result).lower()
 
 
-def test_upload_media_file_respects_media_dir_override(tmp_path, monkeypatch):
-    # With CALLHUB_MEDIA_DIR set, a non-media file *inside* it passes confinement
-    # and is then rejected on extension (proves confinement allowed it through).
+def test_upload_media_file_refuses_outside_approved_dir(tmp_path, monkeypatch):
+    # A file outside the approved directory is refused even when one is set.
+    monkeypatch.setenv("CALLHUB_MEDIA_DIR", str(tmp_path))
+    outside = tmp_path.parent / "outside.png"
+    outside.write_text("x")
+    result = srv.upload_media_file_tool(file_path=str(outside))
+    assert result.get("isError") is True
+    assert "outside the approved upload directory" in str(result).lower()
+
+
+def test_upload_media_file_allows_inside_approved_dir(tmp_path, monkeypatch):
+    # A file inside the approved directory passes confinement, then is rejected
+    # on extension (proving confinement let it through).
     monkeypatch.setenv("CALLHUB_MEDIA_DIR", str(tmp_path))
     f = tmp_path / "note.txt"
     f.write_text("x")
