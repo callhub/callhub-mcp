@@ -399,3 +399,45 @@ def find_duplicate_contacts(params: Dict[str, Any]) -> List[str]:
     # Extract contact IDs
     contacts = results.get("results", [])
     return [contact["id"] for contact in contacts if "id" in contact]
+
+
+def search_contacts(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Search contacts by phone number, name, or email using the API's search
+    filter. Prefer this over paging through list_contacts to find a contact.
+
+    Args:
+        params: Dictionary with:
+            - accountName (optional): The account to use
+            - query (str): The search term (phone, name, or email)
+            - page (optional): Page number or full page URL
+    """
+    query_term = params.get("query")
+    if not query_term:
+        return {"isError": True, "content": [{"type": "text", "text": "'query' is required."}]}
+    client = McpApiClient(params.get("accountName"))
+    query = {"search": query_term}
+    page = params.get("page")
+    if page is not None:
+        query["page"] = page
+    return client.call(ENDPOINTS.CONTACTS_V1, "GET", query=query)
+
+
+def add_contact_notes(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Save a note on a contact. Side effect: appends the note to the contact record.
+
+    Args:
+        params: Dictionary with:
+            - accountName (optional): The account to use
+            - contactId (str): The contact to annotate
+            - notes (str): The note text
+    """
+    contact_id = params.get("contactId")
+    if not contact_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'contactId' is required."}]}
+    notes = params.get("notes")
+    if not notes:
+        return {"isError": True, "content": [{"type": "text", "text": "'notes' is required."}]}
+    client = McpApiClient(params.get("accountName"))
+    return client.call(f"{ENDPOINTS.CONTACT_NOTES}{contact_id}", "POST", body={"notes": notes})

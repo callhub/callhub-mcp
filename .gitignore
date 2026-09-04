@@ -94,9 +94,19 @@ temp/
 !tsconfig.json
 !.json
 !example*.json
+!manifest.json
+!glama.json
 
 # Exception files
 !.env.example
 !requirements.txt
 !example_data/*.csv
 !example_data/*.json
+# Built extension bundle — distribute via GitHub Releases, do not track in git
+callhub.mcpb
+*.mcpb
+
+# Keep per-platform release bundles in the repo (dist/) even though the Python
+# template ignores dist/ and *.mcpb. Re-include the directory, then the bundles.
+!dist/
+!dist/*.mcpb

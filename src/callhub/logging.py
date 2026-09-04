@@ -101,7 +101,7 @@ class CallHubLogger:
         numeric_level = getattr(logging, log_level.upper(), None)
         if not isinstance(numeric_level, int):
             numeric_level = logging.INFO
-            print(f"Invalid log level: {log_level}, using INFO")
+            print(f"Invalid log level: {log_level}, using INFO", file=sys.stderr)
         
         self.logger.setLevel(numeric_level)
         

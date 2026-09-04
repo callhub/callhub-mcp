@@ -98,11 +98,11 @@ def create_webhook(params: Dict[str, Any]) -> Dict[str, Any]:
             return {"isError": True, "content": [{"type": "text", "text": "'event' is required."}]}
         if not target:
             return {"isError": True, "content": [{"type": "text", "text": "'target' is required."}]}
-        
+
         valid_events = ['vb.transfer', 'sb.reply', 'cc.notes', 'agent.activation']
         if event not in valid_events:
             return {"isError": True, "content": [{"type": "text", "text": f"'event' must be one of: {', '.join(valid_events)}"}]}
-        
+
         client = McpApiClient(params.get("accountName"))
         data = {"event": event, "target": target}
         return client.call(ENDPOINTS.WEBHOOKS, "POST", form_data=data)

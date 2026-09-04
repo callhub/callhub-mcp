@@ -1,0 +1,66 @@
+{
+  "manifest_version": "0.2",
+  "name": "callhub",
+  "display_name": "CallHub",
+  "version": "1.1.0",
+  "description": "Manage CallHub contacts, contact lists, campaigns (call center, voice broadcast, text broadcast, P2P), agents, teams, numbers, DNC, and more from Claude.",
+  "long_description": "The CallHub MCP extension lets Claude manage your CallHub account through natural language: contacts and contact lists, tags and custom fields, agents and teams, and campaigns across call center, voice broadcast, text broadcast, P2P, and relational organizing, plus DNC lists, phone numbers, webhooks, and reporting.\n\n## Setup\n\nEnter your CallHub API key and API Domain in the extension settings. Find both under Settings → Account → API Key in your CallHub dashboard — copy the API Domain (region-specific, for example `https://api-na1.callhub.io`) and the API Key.\n\n## Multiple accounts\n\nThe key you enter here is used as your `default` account. To work with additional accounts, ask Claude to configure them by name (the `configureAccount` tool), then refer to an account by name in your requests — for example, \"list the teams in my personal account.\"\n\n## Examples\n\n- \"Create a contact with phone 1234567890, first name John, last name Doe, and add them to a new contact list called VIP Customers.\"\n- \"Show me all my teams, then create a new agent in the Sales team.\"\n- \"List my voice broadcast campaigns and duplicate the one called Fall Drive.\"",
+  "author": {
+    "name": "CallHub",
+    "email": "support@callhub.io",
+    "url": "https://callhub.io"
+  },
+  "documentation": "https://developer.callhub.io/v3.1/reference/getting-started",
+  "support": "https://github.com/callhub/callhub-mcp/issues",
+  "icon": "icon.png",
+  "server": {
+    "type": "python",
+    "entry_point": "src/server.py",
+    "mcp_config": {
+      "command": "python3",
+      "args": [
+        "${__dirname}/src/server.py"
+      ],
+      "env": {
+        "PYTHONPATH": "${__dirname}/src/lib",
+        "CALLHUB_API_KEY": "${user_config.api_key}",
+        "CALLHUB_USERNAME": "${user_config.username}",
+        "CALLHUB_BASE_URL": "${user_config.base_url}",
+        "CALLHUB_MEDIA_DIR": "${user_config.media_dir}"
+      }
+    }
+  },
+  "user_config": {
+    "api_key": {
+      "type": "string",
+      "title": "API Key",
+      "description": "Your CallHub API key, from Settings → Account → API Key in the CallHub dashboard. Used as your 'default' account.",
+      "sensitive": true,
+      "required": true
+    },
+    "base_url": {
+      "type": "string",
+      "title": "API Domain",
+      "description": "The API Domain shown with your API key (Settings → Account → API Key), region-specific — for example https://api-na1.callhub.io.",
+      "required": true
+    },
+    "username": {
+      "type": "string",
+      "title": "Username (email)",
+      "description": "Optional. The email address of your CallHub login, stored alongside the default account.",
+      "required": false
+    },
+    "media_dir": {
+      "type": "directory",
+      "title": "Media upload directory",
+      "description": "Optional. A folder to allow media uploads from. The uploadMediaFile tool can only read files inside this folder; leave empty to disable media uploads.",
+      "required": false
+    }
+  },
+  "compatibility": {
+    "runtimes": {
+      "python": ">=3.10"
+    }
+  },
+  "license": "MIT"
+}

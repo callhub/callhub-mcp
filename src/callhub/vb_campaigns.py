@@ -223,3 +223,46 @@ def validate_vb_campaign_params(params: Dict[str, Any]) -> Dict[str, Any]:
         "valid": True,
         "errors": []
     }
+
+
+def list_voice_broadcast_templates(params: Dict[str, Any]) -> Dict[str, Any]:
+    """List voice broadcast templates."""
+    client = McpApiClient(params.get("accountName"))
+    query = {}
+    page = params.get("page")
+    if page is not None:
+        query["page"] = page
+    return client.call(ENDPOINTS.VB_TEMPLATES, "GET", query=query)
+
+
+def delete_voice_broadcast_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
+    """Delete a voice broadcast campaign by ID. Permanent."""
+    campaign_id = params.get("campaignId")
+    if not campaign_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+    try:
+        client = McpApiClient(params.get("accountName"))
+        return client.call(f"{ENDPOINTS.VOICE_BROADCASTS}{campaign_id}/", "DELETE")
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error deleting voice broadcast campaign: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+def update_voice_broadcast_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
+    """Update a voice broadcast campaign by ID (name, status, and/or frequency)."""
+    campaign_id = params.get("campaignId")
+    if not campaign_id:
+        return {"isError": True, "content": [{"type": "text", "text": "'campaignId' is required."}]}
+    try:
+        client = McpApiClient(params.get("accountName"))
+        data = {}
+        if params.get("name") is not None:
+            data["name"] = params["name"]
+        if params.get("status") is not None:
+            data["status"] = params["status"]
+        if params.get("frequency") is not None:
+            data["frequency"] = params["frequency"]
+        return client.call(f"{ENDPOINTS.VOICE_BROADCASTS}{campaign_id}/", "PUT", body=data)
+    except Exception as e:
+        sys.stderr.write(f"[callhub] Error updating voice broadcast campaign: {str(e)}\n")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}

@@ -1,74 +1,19 @@
 #!/usr/bin/env python3
-"""CallHub MCP Server - Auto-builds dependencies if needed"""
+"""CallHub MCP Server."""
 
 import sys
 from pathlib import Path
 
 import logging
 logger = logging.getLogger("callhub")
-# Add server/lib to Python path
-server_dir = Path( __file__ ).parent
+
+# Add the bundled dependency directory to the import path. The MCPB bundle
+# ships third-party dependencies under `lib/` alongside this file, so no
+# runtime installation is ever required.
+server_dir = Path(__file__).parent
 lib_path = server_dir / "lib"
-if lib_path.exists() :
-    sys.path.insert( 0 , str( lib_path ) )
-
-
-# Try to import required packages
-def check_dependencies () :
-    """Check if all dependencies are available"""
-    try :
-        import mcp
-        import pydantic
-        import dotenv
-        import requests
-        import selenium
-        import urllib3
-        return True
-    except ImportError as e :
-        logger.info( f"⚠️  Missing dependency: {e}" )
-        return False
-
-
-def build_dependencies () :
-    """Build dependencies into server/lib"""
-    import subprocess
-    import shutil
-
-    logger.info( "📦 Installing dependencies..." )
-
-    project_root = Path( __file__ ).parent.parent
-    lib_path = Path( __file__ ).parent / "lib"
-
-    # Clean and create lib directory
-    if lib_path.exists() :
-        shutil.rmtree( lib_path )
-    lib_path.mkdir( parents = True )
-
-    # Install dependencies
-    requirements_file = project_root / "requirements.txt"
-    if requirements_file.exists() :
-        subprocess.run( [ sys.executable , "-m" , "pip" , "install" , "--target" , str( lib_path ) , "-r" ,
-            str( requirements_file ) ] , check = True,stdout=sys.stderr, stderr=sys.stderr )
-        logger.info( "✅ Dependencies installed!" )
-        return True
-    else :
-        logger.info( "❌ requirements.txt not found!" )
-        return False
-
-
-# Check and build if needed
-if not check_dependencies() :
-    logger.info( "🔧 Dependencies missing. Building..." )
-    if build_dependencies() :
-        # Add lib to path again after building
-        sys.path.insert( 0 , str( lib_path ) )
-
-        # Verify dependencies are now available
-        if not check_dependencies() :
-            logger.info( "❌ Failed to install dependencies!" )
-            sys.exit( 1 )
-    else :
-        sys.exit( 1 )
+if lib_path.exists():
+    sys.path.insert(0, str(lib_path))
 
 
 """
@@ -206,11 +151,6 @@ from callhub.csv_processor import (
     process_uploaded_csv,
     process_agent_activation_csv_from_file,
 )
-from callhub.browser_automation import (
-    activate_agents_with_password,
-    process_local_activation_csv,
-)
-
 from callhub.phonebooks import (
     list_phonebooks,
     get_phonebook,
@@ -247,14 +187,6 @@ from callhub.webhooks import (
     get_webhook,
     create_webhook,
     delete_webhook,
-)
-
-# Import our new batch activation tools
-from callhub.mcp_tools.batch_activation_tools import (
-    prepare_agent_activation,
-    activate_agents_with_batch_password,
-    get_activation_status,
-    reset_activation_state
 )
 
 from callhub.survey_templates import (
@@ -344,17 +276,6 @@ def configure_account_tool(accountName: str, username: str, apiKey: str, baseUrl
 def delete_account_tool(accountName: str) -> dict:
     try:
         return delete_callhub_account({"accountName": accountName})
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
-
-
-@server.tool(name="fetchAgents", description="Retrieve current agents via CallHub API. Optional 'account'.")
-def fetch_agents_tool(account: Optional[str] = None) -> dict:
-    try:
-        params = {}
-        if account:
-            params["accountName"] = account
-        return fetch_agents(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -498,7 +419,7 @@ def create_contact_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="createContactsBulk", description="Create multiple contacts by uploading a CSV file or providing a CSV URL. Requires phonebook_id parameter. Optional country_choice ('file' or 'custom') and country_iso (when country_choice is 'custom'). Note: This API has a rate limit of 1 call per minute.")
+@server.tool(name="bulkCreateContacts", description="Create multiple contacts by uploading a CSV file or providing a CSV URL. Requires phonebook_id parameter. Optional country_choice ('file' or 'custom') and country_iso (when country_choice is 'custom'). Note: This API has a rate limit of 1 call per minute.")
 def create_contacts_bulk_tool(
     account: Optional[str] = None,
     phonebook_id: Optional[str] = None,  # Added phonebook_id parameter
@@ -603,7 +524,7 @@ def get_contact_fields_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="listPhonebooks", description="List phonebooks with optional pagination.")
+@server.tool(name="listContactLists", description="List phonebooks with optional pagination.")
 def list_phonebooks_tool(
     account: Optional[str] = None,
     page: Optional[int] = None,
@@ -622,7 +543,7 @@ def list_phonebooks_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="getPhonebook", description="Retrieve a single phonebook by ID.")
+@server.tool(name="getContactList", description="Retrieve a single phonebook by ID.")
 def get_phonebook_tool(
     account: Optional[str] = None,
     phonebookId: Optional[str] = None
@@ -636,7 +557,7 @@ def get_phonebook_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="createPhonebook", description="Create a new phonebook. Pass fields as URL-encoded string (e.g., 'name=MyPhonebook&description=Description').")
+@server.tool(name="createContactList", description="Create a new phonebook. Pass fields as URL-encoded string (e.g., 'name=MyPhonebook&description=Description').")
 def create_phonebook_tool(
     account: Optional[str] = None,
     phonebook_fields: str = None
@@ -656,7 +577,7 @@ def create_phonebook_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="updatePhonebook", description="Update a phonebook. Pass fields as URL-encoded string (e.g., 'name=NewName&description=NewDesc').")
+@server.tool(name="updateContactList", description="Update a phonebook. Pass fields as URL-encoded string (e.g., 'name=NewName&description=NewDesc').")
 def update_phonebook_tool(
     account: Optional[str] = None,
     phonebookId: Optional[str] = None,
@@ -677,7 +598,7 @@ def update_phonebook_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="deletePhonebook", description="Delete a phonebook by ID.")
+@server.tool(name="deleteContactList", description="Delete a phonebook by ID.")
 def delete_phonebook_tool(
     account: Optional[str] = None,
     phonebookId: Optional[str] = None
@@ -691,7 +612,7 @@ def delete_phonebook_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="addContactsToPhonebook", description="Add (upsert) contacts into a phonebook.")
+@server.tool(name="addContactsToContactList", description="Add (upsert) contacts into a phonebook.")
 def add_contacts_to_phonebook_tool(
     account: str | None = None,
     phonebookId: str | None = None,
@@ -723,7 +644,7 @@ def add_contacts_to_phonebook_tool(
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-@server.tool(name="removeContactFromPhonebook", description="Remove a contact from a phonebook.")
+@server.tool(name="removeContactsFromContactList", description="Remove a contact from a phonebook.")
 def remove_contact_from_phonebook_tool(
     account: Optional[str] = None,
     phonebookId: Optional[str] = None,
@@ -738,7 +659,7 @@ def remove_contact_from_phonebook_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="getPhonebookCount", description="Get total contacts in a phonebook.")
+@server.tool(name="getContactListCount", description="Get total contacts in a phonebook.")
 def get_phonebook_count_tool(
     account: Optional[str] = None,
     phonebookId: Optional[str] = None
@@ -752,7 +673,7 @@ def get_phonebook_count_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="getPhonebookContacts", description="Get contacts in a phonebook with pagination.")
+@server.tool(name="getContactListContacts", description="Get contacts in a phonebook with pagination.")
 def get_phonebook_contacts_tool(
     account: Optional[str] = None,
     phonebookId: Optional[str] = None,
@@ -863,7 +784,7 @@ def delete_tag_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="addTagToContact", description="Add tags to a contact by specifying tag names.")
+@server.tool(name="addTagsToContact", description="Add tags to a contact by specifying tag names.")
 def add_tag_to_contact_tool(
     account: Optional[str] = None,
     contactId: str = None,
@@ -994,7 +915,7 @@ def delete_custom_field_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="updateContactCustomField", description="Update a custom field value for a contact.")
+@server.tool(name="setContactCustomField", description="Update a custom field value for a contact.")
 def update_contact_custom_field_tool(
     account: Optional[str] = None,
     contactId: str = None,
@@ -1126,7 +1047,7 @@ def list_call_center_campaigns_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="updateCallCenterCampaign", description="Update a call center campaign's status. Valid values: 'pause', 'resume', 'stop', 'restart'.")
+@server.tool(name="updateCallCenterCampaignStatus", description="Update a call center campaign's status. Valid values: 'pause', 'resume', 'stop', 'restart'.")
 def update_call_center_campaign_tool(
     account: Optional[str] = None,
     campaignId: str = None,
@@ -1176,7 +1097,7 @@ def create_call_center_campaign_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="duplicatePowerCampaign", description="Duplicates a PowerCampaign with specified parameters.")
+@server.tool(name="duplicateCallCenterCampaign", description="Duplicates a PowerCampaign with specified parameters.")
 def duplicate_power_campaign_tool(
     campaign_id: int,
     phonebook_ids: List[int],
@@ -1252,7 +1173,7 @@ def get_campaign_stats_advanced_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="getMediaFiles", description="Retrieve a list of media files (audio, images, videos) uploaded to CallHub. Supports pagination.")
+@server.tool(name="listMedia", description="Retrieve a list of media files (audio, images, videos) uploaded to CallHub. Supports pagination.")
 def get_media_files_tool(
     account: Optional[str] = None,
     page: Optional[int] = None,
@@ -1264,16 +1185,15 @@ def get_media_files_tool(
         params = {}
         if account:
             params["accountName"] = account
-        if page is not None:
-            params["page"] = page
         if pageSize is not None:
-            params["pageSize"] = pageSize
+            params["limit"] = pageSize
+        if page is not None and pageSize is not None:
+            params["offset"] = (page - 1) * pageSize
         if file_type:
-            params["file_type"] = file_type
+            params["media_type"] = file_type
         if search:
-            params["search"] = search
+            params["name"] = search
 
-        # Assuming a function `list_media_files` exists in `callhub.media`
         return get_media_files(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -1281,7 +1201,7 @@ def get_media_files_tool(
 
 # Phone Number Management Tools
 
-@server.tool(name="listRentedNumbers", description="List all rented calling numbers (caller IDs) for the account.")
+@server.tool(name="listRentedCallingNumbers", description="List all rented calling numbers (caller IDs) for the account.")
 def list_rented_numbers_tool(
     account: Optional[str] = None
 ) -> dict:
@@ -1317,7 +1237,7 @@ def list_voice_broadcast_campaigns_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="getVbCampaign", description="Get a voice broadcast campaign by ID.")
+@server.tool(name="getVoiceBroadcastCampaign", description="Get a voice broadcast campaign by ID.")
 def get_vb_campaign_tool(
     account: Optional[str] = None,
     campaignId: str = None
@@ -1333,7 +1253,7 @@ def get_vb_campaign_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="createVbCampaign", description="Create a new voice broadcast campaign.")
+@server.tool(name="createVoiceBroadcastCampaign", description="Create a new voice broadcast campaign.")
 def create_vb_campaign_tool(
     account: Optional[str] = None,
     campaign_data: dict = None
@@ -1349,7 +1269,7 @@ def create_vb_campaign_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="createVbCampaignTemplate", description="Create a new voice broadcast campaign template.")
+@server.tool(name="createVoiceBroadcastTemplate", description="Create a new voice broadcast campaign template.")
 def create_vb_campaign_template_tool(
     account: Optional[str] = None,
     template_data: dict = None
@@ -1417,7 +1337,7 @@ def rent_number_tool(
 
 # SMS Campaign Management Tools
 
-@server.tool(name="listSmsCampaigns", description="List all SMS campaigns with optional pagination.")
+@server.tool(name="listTextBroadcasts", description="List all SMS campaigns with optional pagination.")
 def list_sms_campaigns_tool(
     account: Optional[str] = None,
     page: Optional[int] = None,
@@ -1437,7 +1357,7 @@ def list_sms_campaigns_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="updateSmsCampaign", description="Update an SMS campaign's status. Valid values: 'start', 'pause', 'abort', 'end' or 1-4 numerically.")
+@server.tool(name="updateSmsCampaignStatus", description="Update an SMS campaign's status. Valid values: 'start', 'pause', 'abort', 'end' or 1-4 numerically.")
 def update_sms_campaign_tool(
     account: Optional[str] = None,
     campaignId: str = None,
@@ -1489,7 +1409,7 @@ def list_p2p_campaigns_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="updateP2pCampaign", description="Update a P2P campaign's status. Valid values: 'start', 'pause', 'abort', 'end' or 1-4 numerically.")
+@server.tool(name="updateP2pCampaignStatus", description="Update a P2P campaign's status. Valid values: 'start', 'pause', 'abort', 'end' or 1-4 numerically.")
 def update_p2p_campaign_tool(
     account: Optional[str] = None,
     campaignId: str = None,
@@ -1521,7 +1441,7 @@ def update_p2p_campaign_tool(
 
 
 
-@server.tool(name="getP2pCampaignAgents", description="Get agents for a P2P campaign.")
+@server.tool(name="listP2pCampaignAgents", description="Get agents for a P2P campaign.")
 def get_p2p_campaign_agents_tool(
     account: Optional[str] = None,
     campaignId: str = None
@@ -1579,7 +1499,7 @@ def reassign_p2p_agents_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="getP2pSurveys", description="Get surveys for a P2P campaign.")
+@server.tool(name="listP2pSurveys", description="Get surveys for a P2P campaign.")
 def get_p2p_surveys_tool(
     account: Optional[str] = None,
     campaignId: Optional[str] = None
@@ -1598,7 +1518,7 @@ def get_p2p_surveys_tool(
 
 
 
-@server.tool(name="createSmsBroadcast", description="Create a new SMS broadcast campaign.")
+@server.tool(name="createTextBroadcast", description="Create a new SMS broadcast campaign.")
 def create_sms_broadcast_tool(
     account: Optional[str] = None,
     name: str = None,
@@ -1687,7 +1607,7 @@ def create_sms_broadcast_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="getSmsBroadcast", description="Get details of an SMS broadcast campaign.")
+@server.tool(name="getTextBroadcast", description="Get details of an SMS broadcast campaign.")
 def get_sms_broadcast_tool(
     account: Optional[str] = None,
     campaignId: str = None
@@ -1708,7 +1628,7 @@ def get_sms_broadcast_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="updateSmsBroadcast", description="Update an SMS broadcast campaign's status. Valid values: 'start', 'pause', 'abort', 'end' or 1-4 numerically.")
+@server.tool(name="updateTextBroadcastStatus", description="Update an SMS broadcast campaign's status. Valid values: 'start', 'pause', 'abort', 'end' or 1-4 numerically.")
 def update_sms_broadcast_tool(
     account: Optional[str] = None,
     campaignId: str = None,
@@ -1736,8 +1656,8 @@ def update_sms_broadcast_tool(
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
-@server.tool(name="createP2PCampaign", description="Create a new P2P campaign with a complex script structure.")
-def dsafdsf(
+@server.tool(name="createP2pCampaign", description="Create a new P2P campaign with a complex script structure.")
+def create_p2p_campaign_tool(
     account: Optional[str] = None,
     campaign_data: dict = None
 ) -> dict:
@@ -1800,7 +1720,7 @@ def get_credit_usage_tool(
 
 # DNC Contact Management Tools
 
-@server.tool(name="createDncContact", description="Create a new DNC contact with the specified phone number.")
+@server.tool(name="addToDnc", description="Create a new DNC contact with the specified phone number.")
 def create_dnc_contact_tool(
     account: Optional[str] = None,
     dnc: str = None, # This is the DNC list URL
@@ -1817,7 +1737,7 @@ def create_dnc_contact_tool(
     """
     try:
         # Parameters are passed directly to the imported function
-        return create_dnc_contact(account=account, dnc=dnc, phone_number=phone_number, category=category)
+        return create_dnc_contact({"account": account, "dnc": dnc, "phone_number": phone_number, "category": category})
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -1831,7 +1751,7 @@ def list_dnc_contacts_tool(
 ) -> dict:
     try:
         # Parameters are passed directly to the imported function
-        return list_dnc_contacts(account=account, page=page, pageSize=pageSize, allPages=allPages)
+        return list_dnc_contacts({"account": account, "page": page, "pageSize": pageSize, "allPages": allPages})
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -1845,19 +1765,19 @@ def update_dnc_contact_tool(
 ) -> dict:
     try:
         # Parameters are passed directly to the imported function
-        return update_dnc_contact(account=account, contactId=contactId, dnc=dnc, phone_number=phone_number)
+        return update_dnc_contact({"account": account, "contactId": contactId, "dnc": dnc, "phone_number": phone_number})
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="deleteDncContact", description="Delete a DNC contact by ID.")
+@server.tool(name="removeFromDnc", description="Delete a DNC contact by ID.")
 def delete_dnc_contact_tool(
     account: Optional[str] = None,
     contactId: str = None # DNC Contact ID
 ) -> dict:
     try:
         # Parameters are passed directly to the imported function
-        return delete_dnc_contact(account=account, contactId=contactId)
+        return delete_dnc_contact({"account": account, "contactId": contactId})
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -1996,7 +1916,7 @@ def create_dnc_list_tool(
 ) -> dict:
     try:
         # Parameters are passed directly to the imported function
-        return create_dnc_list(account=account, name=name)
+        return create_dnc_list({"account": account, "name": name})
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -2010,7 +1930,7 @@ def list_dnc_lists_tool(
 ) -> dict:
     try:
         # Parameters are passed directly to the imported function
-        return list_dnc_lists(account=account, page=page, pageSize=pageSize, allPages=allPages)
+        return list_dnc_lists({"account": account, "page": page, "pageSize": pageSize, "allPages": allPages})
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -2065,7 +1985,7 @@ def duplicate_relational_campaign_tool(
 
 
 @server.tool(
-    name="assignAgentsToRelationalCampaign",
+    name="assignRelationalCampaignAgents",
     description="Assign or remove agents to/from a relational organizing campaign.",
 )
 def assign_agents_to_relational_campaign_tool(
@@ -2081,7 +2001,7 @@ def assign_agents_to_relational_campaign_tool(
 
 
 
-@server.tool(name="duplicateSmsBroadcast", description="Duplicate an SMS broadcast campaign.")
+@server.tool(name="duplicateTextBroadcast", description="Duplicate an SMS broadcast campaign.")
 def duplicate_sms_broadcast_tool(
     account: Optional[str] = None, campaign_id: int = None
 ) -> dict:
@@ -2107,7 +2027,7 @@ def duplicate_p2p_campaign_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="addAgentsToPowerCampaign", description="Add agents to a power campaign.")
+@server.tool(name="addAgentsToCallCenterCampaign", description="Add agents to a power campaign.")
 def add_agents_to_power_campaign_tool(
     account: Optional[str] = None, campaign_id: int = None, agent_ids: list = None
 ) -> dict:
@@ -2120,14 +2040,14 @@ def add_agents_to_power_campaign_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="duplicateVbCampaign", description="Duplicate a voice broadcast campaign.")
+@server.tool(name="duplicateVoiceBroadcastCampaign", description="Duplicate a voice broadcast campaign.")
 def duplicate_vb_campaign_tool(
     account: Optional[str] = None, campaign_id: int = None
 ) -> dict:
     try:
         params = {"campaignId": campaign_id}
         if account:
-            params["accountName"] = account
+            params["account"] = account
         return duplicate_vb_campaign(params)
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
@@ -2197,7 +2117,7 @@ def update_relational_campaign_status_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="exportSmsReport", description="Export an SMS report for a campaign.")
+@server.tool(name="exportTextBroadcastReport", description="Export an SMS report for a campaign.")
 
 
 def export_sms_report_tool(
@@ -2236,7 +2156,7 @@ def export_sms_report_tool(
 
 
 
-@server.tool(name="exportPowerCampaign", description="Export a power campaign.")
+@server.tool(name="exportCallCenterCampaign", description="Export a power campaign.")
 
 
 def export_power_campaign_tool(
@@ -2251,7 +2171,7 @@ def export_power_campaign_tool(
     try:
 
 
-        params = {"campaignId": campaign_id}
+        params = {"campaign_id": campaign_id}
 
 
         if account:
@@ -2266,7 +2186,10 @@ def export_power_campaign_tool(
     except Exception as e:
 
 
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}@server.tool(name="updateDncList", description="Update an existing DNC list by ID.")
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="updateDncList", description="Update an existing DNC list by ID.")
 def update_dnc_list_tool(
     account: Optional[str] = None,
     listId: str = None, # DNC List ID
@@ -2274,7 +2197,7 @@ def update_dnc_list_tool(
 ) -> dict:
     try:
         # Parameters are passed directly to the imported function
-        return update_dnc_list(account=account, listId=listId, name=name)
+        return update_dnc_list({"account": account, "listId": listId, "name": name})
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -2286,7 +2209,7 @@ def delete_dnc_list_tool(
 ) -> dict:
     try:
         # Parameters are passed directly to the imported function
-        return delete_dnc_list(account=account, listId=listId)
+        return delete_dnc_list({"account": account, "listId": listId})
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
@@ -2358,75 +2281,6 @@ def process_agent_activation_csv_tool(csv_content: str) -> dict:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="activateAgentsWithPassword", description="Automate activation of agents using their activation URLs and a common password. IMPORTANT: This function must be used with activation data from the CSV downloaded from the CallHub UI export. Never attempt to generate this data manually.")
-def activate_agents_with_password_tool(activation_data: List[Dict] = None, password: str = None, account: Optional[str] = None) -> dict:
-    """Automate activation of agents by visiting each agent's activation URL and setting a common password.
-
-    This tool uses headless browser automation to visit each agent's activation URL and set
-    the provided password, completing the activation process without manual intervention.
-
-    Args:
-        activation_data: List of activation data entries, each with at least 'url' field
-        password: Password to set for all activating agents (must be at least 8 characters)
-                 If not provided, defaults to "CallHub" + current year (e.g., CallHub2025)
-        account: Optional account name to use (defaults to 'default')
-
-    Returns:
-        Dict with results of activation attempts
-    """
-    try:
-        if not activation_data:
-            return {
-                "isError": True,
-                "content": [{"type": "text", "text": "activation_data is required - must provide a list of agent activation data"}]
-            }
-
-        # If no password provided, use the default scheme: CallHub + current year
-        if not password:
-            current_year = datetime.datetime.now().year
-            password = f"CallHub{current_year}"
-            sys.stderr.write(f"[callhub] Using default password scheme: {password}\n")
-
-        # Check password length - CallHub requires at least 8 characters
-        if len(password) < 8:
-            return {
-                "isError": True,
-                "content": [
-                    {"type": "text", "text": f"Password '{password}' is too short. CallHub requires passwords to be at least 8 characters long."},
-                    {"type": "text", "text": "Please provide a longer password that meets the minimum requirements."}
-                ]
-            }
-
-        return activate_agents_with_password(activation_data, password, account)
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
-
-
-@server.tool(name="processLocalActivationCsv", description="Process a local CSV file containing agent activation URLs. IMPORTANT: When a user uploads a CSV, Claude can only see the filename but cannot read its contents. This tool searches for the file by name in the user's local system (Downloads, Desktop, etc.) and processes the actual local file.")
-def process_local_activation_csv_tool(file_path: str) -> dict:
-    """
-    Process a local CSV file containing agent activation URLs.
-
-    IMPORTANT WORKFLOW:
-    1. When a user uploads a CSV file to the conversation, Claude can only see the filename
-       but CANNOT access the content of the uploaded file
-    2. This tool uses the filename to search for the actual file on the user's local system
-       (Downloads folder, Desktop, Documents, etc.)
-    3. The actual CSV content is read and processed from the local file system, not from
-       the uploaded file
-
-    Args:
-        file_path: Name or path of the CSV file containing agent activations
-
-    Returns:
-        Dict with the parsed activation data from the LOCAL file (not the uploaded file)
-    """
-    try:
-        return process_local_activation_csv(file_path)
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
-
-
 @server.tool(name="processUploadedActivationCsv", description="IMPORTANT: When a user uploads a CSV file, Claude CANNOT read its contents directly. This tool takes the filename from the upload and searches for the actual file in the user's local system (Downloads, Desktop, etc.)")
 def process_uploaded_activation_csv_tool(file_path: str) -> dict:
     """
@@ -2474,119 +2328,6 @@ def process_uploaded_csv_tool(file_path: str) -> dict:
 
 
 # New Batch Activation Tools
-
-@server.tool(name="activateAgentsWithBatchPassword", description="Activate agents in batches with real-time progress updates. Supports large CSV files and provides resumability.")
-def activate_agents_with_batch_password_tool(
-    account: str,
-    password: str,
-    activation_data: List[Dict],
-    batch_size: int = 10
-) -> dict:
-    """
-    Activate a large number of agents in batches with progress updates and resumability.
-    This tool is designed to handle hundreds of agent activations while providing:
-    1. Real-time progress updates during processing
-    2. Batch processing to avoid overwhelming the server
-    3. Resumability if the process is interrupted or the context window is exceeded
-
-    Args:
-        account: CallHub account name
-        password: Password to set for all agents (must be at least 8 characters)
-        activation_data: List of activation data entries
-        batch_size: Number of agents to process in each batch
-
-    Returns:
-        Dict with activation results and progress information
-    """
-    try:
-        return activate_agents_with_batch_password(
-            account=account,
-            password=password,
-            activation_data=activation_data,
-            batch_size=batch_size
-        )
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
-
-
-@server.tool(name="getActivationStatus", description="Get the current status of an in-progress or completed agent activation job.")
-def get_activation_status_tool(account: str = None) -> dict:
-    """
-    Get the current status of an agent activation job.
-
-    Use this tool to check:
-    1. If an activation job is currently in progress
-    2. How many agents have been activated so far
-    3. When the last update occurred
-
-    This is useful when activation was interrupted and you need to resume,
-    or when dealing with a large number of agents being activated.
-
-    Args:
-        account: CallHub account name
-
-    Returns:
-        Dict with current status information
-    """
-    try:
-        return get_activation_status(account)
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
-
-
-@server.tool(name="resetActivationState", description="Reset the progress tracking state for agent activation (for troubleshooting or restarting).")
-def reset_activation_state_tool(account: str = None) -> dict:
-    """
-    Reset the progress tracking state for agent activation.
-
-    Use this tool if:
-    1. You want to restart an activation process from the beginning
-    2. You're having issues with a previous activation job
-    3. You want to clear saved state from a completed job
-
-    Args:
-        account: CallHub account name
-
-    Returns:
-        Dict with reset result
-    """
-    try:
-        return reset_activation_state(account)
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
-
-
-@server.tool(name="prepareAgentActivation", description="Prepare for agent activation by setting up logs and showing instructions. IMPORTANT: Always call this first before activating agents.")
-def prepare_agent_activation_tool(
-    account: str,
-    password: str,
-    activation_data: List[Dict],
-    batch_size: int = 10
-) -> dict:
-    """
-    Prepare for agent activation by setting up the log file and showing instructions.
-    This MUST be called BEFORE actually activating agents to ensure the user knows
-    where to look for progress updates.
-
-    Args:
-        account: CallHub account name
-        password: Password to set for all agents (must be at least 8 characters)
-        activation_data: List of activation data entries
-        batch_size: Number of agents to process in each batch
-
-    Returns:
-        Dict with log file path and instructions
-    """
-    try:
-        return prepare_agent_activation(
-            account=account,
-            password=password,
-            activation_data=activation_data,
-            batch_size=batch_size
-        )
-    except Exception as e:
-        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
-
 
 # Survey Template Management Tools
 
@@ -2828,7 +2569,7 @@ def update_auto_unrent_settings_tool(
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
 
-@server.tool(name="revalidateNumbers", description="Revalidate phone numbers.")
+@server.tool(name="revalidateNumber", description="Revalidate phone numbers.")
 def revalidate_numbers_tool(
     account: Optional[str] = None
 ) -> dict:
@@ -2897,7 +2638,7 @@ def auto_rent_sms_number_tool(
 
 
 
-@server.tool(name="getShortenedUrl", description="Get details of a shortened URL by its short code.")
+@server.tool(name="getShortenedUrlStats", description="Get details of a shortened URL by its short code.")
 def get_shortened_url_tool(
     account: Optional[str] = None,
     shortCode: Optional[str] = None
@@ -2949,6 +2690,275 @@ def get_api_schema_tool(
     except Exception as e:
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
 
+
+
+# ---------------------------------------------------------------------------
+# Additional tools (completeness + parity with the CallHub API)
+# ---------------------------------------------------------------------------
+from callhub.contacts import search_contacts, add_contact_notes
+from callhub.campaigns import (
+    get_call_center_campaign,
+    delete_call_center_campaign,
+    get_export_job_status,
+)
+from callhub.p2p_campaigns import get_p2p_campaign
+from callhub.vb_campaigns import list_voice_broadcast_templates
+from callhub.numbers import list_numbers_needing_revalidation
+from callhub.dnc import add_to_suppression_list
+
+
+@server.tool(name="searchContacts", description="Search contacts by phone number, name, or email. Use this to find a specific contact instead of paging through listContacts. Rate limit: 1 search per second.")
+def search_contacts_tool(query: str, account: Optional[str] = None, page: Optional[Union[str, int]] = None) -> dict:
+    try:
+        params = {"query": query}
+        if account:
+            params["accountName"] = account
+        if page is not None:
+            params["page"] = page
+        return search_contacts(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="addContactNotes", description="Save a note on a contact. Appends the note to the contact record.")
+def add_contact_notes_tool(contactId: str, notes: str, account: Optional[str] = None) -> dict:
+    try:
+        params = {"contactId": contactId, "notes": notes}
+        if account:
+            params["accountName"] = account
+        return add_contact_notes(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getCallCenterCampaign", description="Get a single call center (power) campaign by ID.")
+def get_call_center_campaign_tool(campaignId: str, account: Optional[str] = None) -> dict:
+    try:
+        params = {"campaignId": campaignId}
+        if account:
+            params["accountName"] = account
+        return get_call_center_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="deleteCallCenterCampaign", description="Delete a call center (power) campaign by ID. This is permanent.")
+def delete_call_center_campaign_tool(campaignId: str, account: Optional[str] = None) -> dict:
+    try:
+        params = {"campaignId": campaignId}
+        if account:
+            params["accountName"] = account
+        return delete_call_center_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getExportJobStatus", description="Poll an export job by its job_id (returned by export tools). When complete, the response includes the CSV download URL.")
+def get_export_job_status_tool(jobId: str, account: Optional[str] = None) -> dict:
+    try:
+        params = {"jobId": jobId}
+        if account:
+            params["accountName"] = account
+        return get_export_job_status(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="getP2pCampaign", description="Get a single P2P campaign by ID.")
+def get_p2p_campaign_tool(campaignId: str, account: Optional[str] = None) -> dict:
+    try:
+        params = {"campaignId": campaignId}
+        if account:
+            params["accountName"] = account
+        return get_p2p_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="listVoiceBroadcastTemplates", description="List voice broadcast templates.")
+def list_voice_broadcast_templates_tool(account: Optional[str] = None, page: Optional[Union[str, int]] = None) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        if page is not None:
+            params["page"] = page
+        return list_voice_broadcast_templates(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="listNumbersNeedingRevalidation", description="List phone numbers that need revalidation.")
+def list_numbers_needing_revalidation_tool(account: Optional[str] = None) -> dict:
+    try:
+        params = {}
+        if account:
+            params["accountName"] = account
+        return list_numbers_needing_revalidation(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="addToSuppressionList", description="Bulk-add numbers to a suppression list (a Call Center feature, distinct from DNC). records = [{'phone_number': ..., 'mobile_number': ...}, ...], max 10 per call.")
+def add_to_suppression_list_tool(listId: str, records: List[Dict], account: Optional[str] = None) -> dict:
+    try:
+        params = {"listId": listId, "records": records}
+        if account:
+            params["accountName"] = account
+        return add_to_suppression_list(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+from callhub.vb_campaigns import (
+    delete_voice_broadcast_campaign,
+    update_voice_broadcast_campaign,
+)
+from callhub.sms_campaigns import delete_sms_campaign
+from callhub.users import share_credits
+from callhub.campaigns import upload_media_file
+
+
+@server.tool(name="deleteVoiceBroadcastCampaign", description="Delete a voice broadcast campaign by ID. This is permanent.")
+def delete_voice_broadcast_campaign_tool(campaignId: str, account: Optional[str] = None) -> dict:
+    try:
+        params = {"campaignId": campaignId}
+        if account:
+            params["accountName"] = account
+        return delete_voice_broadcast_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="updateVoiceBroadcastCampaign", description="Update a voice broadcast campaign by ID. Optional: name, status (int), frequency (calls per minute).")
+def update_voice_broadcast_campaign_tool(campaignId: str, account: Optional[str] = None, name: Optional[str] = None, status: Optional[int] = None, frequency: Optional[int] = None) -> dict:
+    try:
+        params = {"campaignId": campaignId}
+        if account:
+            params["accountName"] = account
+        if name is not None:
+            params["name"] = name
+        if status is not None:
+            params["status"] = status
+        if frequency is not None:
+            params["frequency"] = frequency
+        return update_voice_broadcast_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="deleteTextBroadcast", description="Delete an SMS/text broadcast campaign by ID. This is permanent.")
+def delete_text_broadcast_tool(campaignId: str, account: Optional[str] = None) -> dict:
+    try:
+        params = {"campaignId": campaignId}
+        if account:
+            params["account"] = account
+        return delete_sms_campaign(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="uploadMediaFile", description="Upload a local media file (audio/image/video/GIF) to the CallHub media library. Provide file_path (a local path), optional name and generate_gif.")
+def upload_media_file_tool(file_path: str, account: Optional[str] = None, name: Optional[str] = None, generate_gif: Optional[bool] = None) -> dict:
+    try:
+        params = {"file_path": file_path}
+        if account:
+            params["accountName"] = account
+        if name is not None:
+            params["name"] = name
+        if generate_gif is not None:
+            params["generate_gif"] = generate_gif
+        return upload_media_file(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+@server.tool(name="shareCredits", description="Share credits from an enterprise account to a subaccount. Requires subaccount (username) and transfer_amount (integer).")
+def share_credits_tool(subaccount: str, transfer_amount: int, account: Optional[str] = None) -> dict:
+    try:
+        params = {"subaccount": subaccount, "transfer_amount": transfer_amount}
+        if account:
+            params["accountName"] = account
+        return share_credits(params)
+    except Exception as e:
+        return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+# ---------------------------------------------------------------------------
+# Backward-compatible tool aliases
+#
+# Tools were renamed to the canonical CallHub vocabulary (e.g. "phonebook" ->
+# "contact list", "Vb" -> "VoiceBroadcast"). To avoid breaking existing saved
+# flows that still call the old names, every old name resolves transparently to
+# its canonical tool. Aliases are intentionally NOT listed in list_tools(), so
+# the tool catalogue stays clean; they only resolve when invoked.
+# ---------------------------------------------------------------------------
+TOOL_ALIASES = {
+    # Phonebook -> ContactList
+    "createPhonebook": "createContactList",
+    "getPhonebook": "getContactList",
+    "updatePhonebook": "updateContactList",
+    "deletePhonebook": "deleteContactList",
+    "listPhonebooks": "listContactLists",
+    "addContactsToPhonebook": "addContactsToContactList",
+    "removeContactFromPhonebook": "removeContactsFromContactList",
+    "getPhonebookContacts": "getContactListContacts",
+    "getPhonebookCount": "getContactListCount",
+    # Voice Broadcast
+    "createVbCampaign": "createVoiceBroadcastCampaign",
+    "getVbCampaign": "getVoiceBroadcastCampaign",
+    "duplicateVbCampaign": "duplicateVoiceBroadcastCampaign",
+    "createVbCampaignTemplate": "createVoiceBroadcastTemplate",
+    # Text Broadcast
+    "createSmsBroadcast": "createTextBroadcast",
+    "getSmsBroadcast": "getTextBroadcast",
+    "duplicateSmsBroadcast": "duplicateTextBroadcast",
+    "updateSmsBroadcast": "updateTextBroadcastStatus",
+    "listSmsCampaigns": "listTextBroadcasts",
+    "exportSmsReport": "exportTextBroadcastReport",
+    "updateSmsCampaign": "updateSmsCampaignStatus",
+    # Call Center (Power -> CallCenter)
+    "addAgentsToPowerCampaign": "addAgentsToCallCenterCampaign",
+    "duplicatePowerCampaign": "duplicateCallCenterCampaign",
+    "exportPowerCampaign": "exportCallCenterCampaign",
+    "updateCallCenterCampaign": "updateCallCenterCampaignStatus",
+    # P2P
+    "createP2PCampaign": "createP2pCampaign",
+    "getP2pCampaignAgents": "listP2pCampaignAgents",
+    "updateP2pCampaign": "updateP2pCampaignStatus",
+    "getP2pSurveys": "listP2pSurveys",
+    # Relational
+    "assignAgentsToRelationalCampaign": "assignRelationalCampaignAgents",
+    # Contacts / Tags / Custom fields
+    "createContactsBulk": "bulkCreateContacts",
+    "addTagToContact": "addTagsToContact",
+    "updateContactCustomField": "setContactCustomField",
+    # Misc verb cleanups
+    "getMediaFiles": "listMedia",
+    "listRentedNumbers": "listRentedCallingNumbers",
+    "revalidateNumbers": "revalidateNumber",
+    "getShortenedUrl": "getShortenedUrlStats",
+    "createDncContact": "addToDnc",
+    "deleteDncContact": "removeFromDnc",
+    # Consolidated duplicate (fetch_agents was a thin wrapper around list_agents)
+    "fetchAgents": "listAgents",
+}
+
+
+def _install_tool_aliases(mcp_server, aliases):
+    """Wrap the tool manager's call_tool so old tool names resolve to canonical
+    ones without appearing in the tool listing."""
+    tool_manager = mcp_server._tool_manager
+    original_call_tool = tool_manager.call_tool
+
+    async def call_tool_with_aliases(name, arguments, *args, **kwargs):
+        canonical = aliases.get(name, name)
+        return await original_call_tool(canonical, arguments, *args, **kwargs)
+
+    tool_manager.call_tool = call_tool_with_aliases
+
+
+_install_tool_aliases(server, TOOL_ALIASES)
 
 
 if __name__ == "__main__":

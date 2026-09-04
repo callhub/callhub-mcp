@@ -9,7 +9,7 @@ def create_relational_organizing_campaign(params: Dict[str, Any]) -> Dict[str, A
     """
     client = McpApiClient(params.get("accountName"))
     # All params are passed as the body
-    return client.call(f"{ENDPOINTS.RELATIONAL_CAMPAIGN}create", "POST", body=params)
+    return client.call(f"{ENDPOINTS.RELATIONAL_CAMPAIGN}create/", "POST", body=params)
 
 def duplicate_relational_organizing_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -34,7 +34,7 @@ def assign_agents_to_relational_organizing_campaign(params: Dict[str, Any]) -> D
         "agent_ids_to_remove": params.get("agent_ids_to_remove", []),
     }
     client = McpApiClient(params.get("accountName"))
-    return client.call(f"{ENDPOINTS.RELATIONAL_CAMPAIGN}{campaign_id}/agents/", "PUT", body=data)
+    return client.call(f"{ENDPOINTS.RELATIONAL_CAMPAIGN}agents/{campaign_id}/", "PUT", body=data)
 
 def update_relational_organizing_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -46,7 +46,7 @@ def update_relational_organizing_campaign(params: Dict[str, Any]) -> Dict[str, A
     
     client = McpApiClient(params.get("accountName"))
     # All other params are passed as the body
-    return client.call(f"{ENDPOINTS.RELATIONAL_CAMPAIGN}{campaign_id}/", "PUT", body=params)
+    return client.call(f"{ENDPOINTS.RELATIONAL_CAMPAIGN}{campaign_id}/edit/", "PUT", body=params)
 
 def get_relational_organizing_campaign(params: Dict[str, Any]) -> Dict[str, Any]:
     """

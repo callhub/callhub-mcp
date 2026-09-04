@@ -260,3 +260,9 @@ def auto_rent_sms_number(params: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as e:
         sys.stderr.write(f"[callhub] Error auto-renting SMS number: {str(e)}\n")
         return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+
+def list_numbers_needing_revalidation(params: Dict[str, Any]) -> Dict[str, Any]:
+    """List numbers that need revalidation."""
+    client = McpApiClient(params.get("accountName"))
+    return client.call(ENDPOINTS.REVALIDATE_NUMBERS, "GET")
