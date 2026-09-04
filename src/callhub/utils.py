@@ -103,12 +103,13 @@ def retry_with_backoff(func, *args, max_retries=None, initial_backoff=None, max_
                 raise
             
             # Get recommended retry delay from headers if available
-            retry_after = _get_retry_after(e.response.headers if hasattr(e, 'response') and e.response else None)
+            retry_after = _get_retry_after(e.response.headers if hasattr(e, 'response') and e.response is not None else None)
             
             # If retry_after is specified, always use it
             if retry_after:
-                delay = retry_after
-                logger.info(f"Server requested delay of {delay} seconds via retry-after header")
+                # Bound it: an oversized header value must not stall a tool call
+                delay = min(retry_after, max_backoff)
+                logger.info(f"Server requested delay of {retry_after} seconds via retry-after header")
             else:
                 # Add jitter to prevent all clients retrying simultaneously
                 jitter = random.uniform(0.8, 1.2)
@@ -307,11 +308,25 @@ def api_call(method: str, url: str, headers: dict, data: Any = None, params: Dic
     except requests.exceptions.RequestException as e:
         # If we've already retried the maximum number of times or it's not retryable
         # Build a user-friendly error response
-        status_code = e.response.status_code if hasattr(e, 'response') and e.response else None
+        status_code = e.response.status_code if hasattr(e, 'response') and e.response is not None else None
         error_message = str(e)
         
+        # Special handling for rate limiting errors
+        if status_code == 429:
+            # Extract retry information if available
+            retry_after = _get_retry_after(e.response.headers if hasattr(e, 'response') and e.response is not None else None)
+            retry_msg = f" Please retry after {retry_after} seconds." if retry_after else ""
+            
+            return {
+                "isError": True, 
+                "content": [{
+                    "type": "text", 
+                    "text": f"Rate limit exceeded (429). The API has a limit of calls per minute.{retry_msg}"
+                }]
+            }
+        
         # Add more detailed error info if available
-        if hasattr(e, 'response') and e.response and hasattr(e.response, 'text'):
+        if hasattr(e, 'response') and e.response is not None and hasattr(e.response, 'text'):
             error_body = e.response.text
             logger.debug(f"Detailed error response: {error_body}")
             
@@ -336,20 +351,6 @@ def api_call(method: str, url: str, headers: dict, data: Any = None, params: Dic
             except json.JSONDecodeError:
                 # Not JSON, use the raw text
                 error_message = f"{error_message} - Response: {error_body}"
-        
-        # Special handling for rate limiting errors
-        if status_code == 429:
-            # Extract retry information if available
-            retry_after = _get_retry_after(e.response.headers if hasattr(e, 'response') and e.response else None)
-            retry_msg = f" Please retry after {retry_after} seconds." if retry_after else ""
-            
-            return {
-                "isError": True, 
-                "content": [{
-                    "type": "text", 
-                    "text": f"Rate limit exceeded (429). The API has a limit of calls per minute.{retry_msg}"
-                }]
-            }
         
         # Generic error response
         logger.error(f"Request exception: {error_message}")
