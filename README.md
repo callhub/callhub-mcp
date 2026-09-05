@@ -1,7 +1,8 @@
 # CallHub MCP Server
 
-An [MCP](https://modelcontextprotocol.io) server that exposes the CallHub API as
-tools for any MCP-compatible AI assistant — manage contacts and contact lists,
+An [MCP](https://modelcontextprotocol.io) server that exposes the
+[CallHub](https://callhub.io) [API](https://developer.callhub.io/) as tools for
+any MCP-compatible AI assistant — manage contacts and contact lists,
 tags and custom fields, agents and teams, campaigns (call center, voice
 broadcast, text broadcast, P2P, relational organizing), DNC and suppression
 lists, phone numbers, webhooks, media, and reporting, all through natural
