@@ -14,8 +14,9 @@ for Claude Desktop.
 
 [CallHub](https://callhub.io) is a calling and texting platform for campaigns,
 nonprofits, and organizing teams — voice broadcasts, call center / phone
-banking, P2P and bulk texting, and contact management. This server wraps its
-public REST API as MCP tools.
+banking, P2P and bulk texting, and contact management. This server wraps the
+CallHub REST API as MCP tools — mostly public endpoints, plus some
+internal/extended ones (each is flagged in the tool reference).
 
 **Links**
 - [callhub.io](https://callhub.io) — product home
