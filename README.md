@@ -13,8 +13,8 @@ works with any MCP client — Claude Desktop, Cursor, Windsurf, Cline, Continue,
 OpenAI Codex, Gemini CLI, and others — and ships as a one-click `.mcpb` bundle
 for Claude Desktop.
 
-[CallHub](https://callhub.io) is a calling and texting platform for campaigns,
-nonprofits, and organizing teams — voice broadcasts, call center / phone
+[CallHub](https://callhub.io) is a calling and texting platform for advocacies,
+unions, political orgs, nonprofits, and organizing teams — voice broadcasts, call center / phone
 banking, P2P and bulk texting, and contact management. This server wraps the
 CallHub REST API as MCP tools — mostly public endpoints, plus some
 internal/extended ones (each is flagged in the tool reference).
