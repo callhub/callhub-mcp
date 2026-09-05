@@ -1,7 +1,8 @@
 # CallHub MCP Server
 
-An [MCP](https://modelcontextprotocol.io) server that exposes the CallHub API as
-tools for any MCP-compatible AI assistant — manage contacts and contact lists,
+An [MCP](https://modelcontextprotocol.io) server that exposes the
+[CallHub](https://callhub.io) [API](https://developer.callhub.io/) as tools for
+any MCP-compatible AI assistant — manage contacts and contact lists,
 tags and custom fields, agents and teams, campaigns (call center, voice
 broadcast, text broadcast, P2P, relational organizing), DNC and suppression
 lists, phone numbers, webhooks, media, and reporting, all through natural
@@ -12,8 +13,16 @@ works with any MCP client — Claude Desktop, Cursor, Windsurf, Cline, Continue,
 OpenAI Codex, Gemini CLI, and others — and ships as a one-click `.mcpb` bundle
 for Claude Desktop.
 
-- **Tool reference:** [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) — every
-  tool mapped to its CallHub API endpoint.
+[CallHub](https://callhub.io) is a calling and texting platform for campaigns,
+nonprofits, and organizing teams — voice broadcasts, call center / phone
+banking, P2P and bulk texting, and contact management. This server wraps the
+CallHub REST API as MCP tools — mostly public endpoints, plus some
+internal/extended ones (each is flagged in the tool reference).
+
+**Links**
+- [callhub.io](https://callhub.io) — product home
+- [developer.callhub.io](https://developer.callhub.io/) — official CallHub REST API reference
+- [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) — this server's tools mapped to their endpoints
 
 ## Contents
 
@@ -116,7 +125,8 @@ pattern `CALLHUB_<ACCOUNT>_API_KEY` / `_BASE_URL` / `_USERNAME`.
 
 The server registers ~135 tools across all CallHub resources. See
 [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) for the full tool-to-endpoint
-mapping. By area:
+mapping, and the [CallHub API reference](https://developer.callhub.io/) for the
+underlying API. By area:
 
 - **Contacts** — create/get/update/delete, `listContacts`, `searchContacts`, `bulkCreateContacts`, `addContactNotes`, custom fields, tags.
 - **Contact lists** (a.k.a. phonebooks) — create/get/update/delete/list, add/remove contacts, counts.
